@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parametric Curve Control Panel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #131518;
+    color: #a0a4ab;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 48px;
+    border-bottom: 1px solid #23262b;
+    flex-shrink: 0;
+    background: #16181c;
+  }
+  .header-left, .header-right { display: flex; align-items: center; gap: 24px; }
+  .header-right { gap: 12px; }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #5c6069;
+    font-size: 11px;
+    font-family: inherit;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    transition: color .2s;
+  }
+  .tab-btn:hover, .tab-btn.active { color: #e1e3e8; }
+  .tab-btn .icon { font-size: 14px; }
+
+  .nav-group {
+    display: flex;
+    align-items: center;
+    background: #1e2127;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #2a2d33;
+  }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: #7a7e86;
+    font-size: 12px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s, background .15s;
+  }
+  .nav-btn:hover { color: #e1e3e8; background: rgba(255,255,255,.04); }
+
+  .header-btn {
+    background: none;
+    border: none;
+    color: #7a7e86;
+    font-size: 11px;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    transition: color .15s;
+  }
+  .header-btn:hover { color: #e1e3e8; }
+  .header-btn.outlined { border: 1px solid #3a3d44; border-radius: 6px; }
+  .header-btn.outlined:hover { border-color: #555; }
+
+  /* ── Main ── */
+  .main { flex: 1; position: relative; overflow: hidden; }
+
+  #curveCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  #curveCanvas.grabbing { cursor: grabbing; }
+
+  /* ── Equation overlay ── */
+  .equations {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: #7a7e86;
+    pointer-events: none;
+  }
+  .equations .var-x { color: #ff6b6b; }
+  .equations .var-y { color: #51cf66; }
+  .equations .var-z { color: #339af0; }
+  .equations .var-w { color: #fcc419; }
+  .equations .dim  { color: #555; }
+  .equations .hint {
+    margin-top: 12px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: #4a4d54;
+  }
+
+  /* ── Parameter cards ── */
+  .param-cards {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .param-card {
+    width: 52px;
+    padding: 8px 6px;
+    background: rgba(22,24,28,.9);
+    border-radius: 8px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .param-card .label { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .param-card .range { font-size: 7px; color: #555; line-height: 1.3; }
+  .param-card .mapping { margin-top: 4px; font-size: 6px; color: #444; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .card-x { border: 1px solid rgba(255,107,107,.2); }
+  .card-x .label { color: #ff6b6b; }
+  .card-y { border: 1px solid rgba(81,207,102,.2); }
+  .card-y .label { color: #51cf66; }
+  .card-z { border: 1px solid rgba(51,154,240,.2); }
+  .card-z .label { color: #339af0; }
+  .card-w { border: 1px solid rgba(252,196,25,.2); }
+  .card-w .label { color: #fcc419; }
+
+  /* ── Preset indicator ── */
+  .preset-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: #3a3d44;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    position: absolute;
+    bottom: 12px;
+    right: 20px;
+    font-size: 10px;
+    color: #2a2d33;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <button class="tab-btn active" id="tabParametric" onclick="setTab('parametric')">
+        <span class="icon">▣</span> PARAMETRIC CURVE CONTROL PANEL
+      </button>
+      <button class="tab-btn" id="tabFourier" onclick="setTab('fourier')">
+        <span class="icon">∿</span> FOURIER CURVE CONTROL PANEL
+      </button>
+    </div>
+    <div class="header-right">
+      <div class="nav-group">
+        <button class="nav-btn" onclick="prevPreset()">⏮</button>
+        <button class="nav-btn" id="playBtn" onclick="togglePlay()">▶</button>
+        <button class="nav-btn" onclick="nextPreset()">⏭</button>
+      </div>
+      <button class="header-btn"><span style="font-size:14px">☆</span> FAVOURITES</button>
+      <button class="header-btn outlined"><span style="font-size:14px">→</span> SIGN IN</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Equations -->
+    <div class="equations" id="equations"></div>
+
+    <!-- Parameter cards -->
+    <div class="param-cards" id="paramCards"></div>
+
+    <!-- Preset indicator -->
+    <div class="preset-indicator" id="presetIndicator"></div>
+
+    <!-- Canvas -->
+    <canvas id="curveCanvas"></canvas>
+
+    <!-- Footer -->
+    <div class="footer">© 2026 Parametric Curve Explorer</div>
+  </div>
+</div>
+
+<script>
+// ─── Presets ───
+const PRESETS = [
+  {
+    name: "Butterfly",
+    x: "Math.sin(t) - 0.50 * Math.sin(3*t)",
+    y: "-Math.cos(t) + 0.50 * Math.cos(3*t)",
+    z: "Math.cos(t) * Math.cos(3*t)",
+    w: "0.3333 * Math.sin(5*t)",
+    xLabel: "sin θ − 0.50 sin 3θ",
+    yLabel: "−cos θ + 0.50 cos 3θ",
+    zLabel: "cos θ · cos 3θ",
+    wLabel: "0.3333 sin 5θ",
+    xRange: [-1.5, 1.5], yRange: [-1.5, 1.5], zRange: [-1, 1], wRange: [-0.34, 0.34],
+  },
+  {
+    name: "Lissajous",
+    x: "Math.sin(3*t)",
+    y: "Math.cos(2*t)",
+    z: "Math.sin(5*t) * 0.5",
+    w: "0.5 * Math.cos(7*t)",
+    xLabel: "sin 3θ", yLabel: "cos 2θ", zLabel: "0.5 sin 5θ", wLabel: "0.5 cos 7θ",
+    xRange: [-1, 1], yRange: [-1, 1], zRange: [-0.5, 0.5], wRange: [-0.5, 0.5],
+  },
+  {
+    name: "Rose",
+    x: "Math.cos(2*t) * Math.cos(t)",
+    y: "Math.cos(2*t) * Math.sin(t)",
+    z: "Math.sin(4*t) * 0.3",
+    w: "0.25 * Math.sin(6*t)",
+    xLabel: "cos 2θ · cos θ", yLabel: "cos 2θ · sin θ", zLabel: "0.3 sin 4θ", wLabel: "0.25 sin 6θ",
+    xRange: [-1, 1], yRange: [-1, 1], zRange: [-0.3, 0.3], wRange: [-0.25, 0.25],
+  },
+  {
+    name: "Trefoil",
+    x: "Math.sin(t) + 2 * Math.sin(2*t)",
+    y: "Math.cos(t) - 2 * Math.cos(2*t)",
+    z: "-Math.sin(3*t)",
+    w: "0.3333 * Math.sin(3*t)",
+    xLabel: "sin θ + 2 sin 2θ", yLabel: "cos θ − 2 cos 2θ", zLabel: "−sin 3θ", wLabel: "0.3333 sin 3θ",
+    xRange: [-3, 3], yRange: [-3, 3], zRange: [-1, 1], wRange: [-0.34, 0.34],
+  },
+  {
+    name: "Spirograph",
+    x: "0.7*Math.cos(t) + 0.3*Math.cos(7*t)",
+    y: "0.7*Math.sin(t) + 0.3*Math.sin(7*t)",
+    z: "0.4*Math.sin(3*t)",
+    w: "0.5*Math.cos(5*t)",
+    xLabel: "0.7 cos θ + 0.3 cos 7θ", yLabel: "0.7 sin θ + 0.3 sin 7θ",
+    zLabel: "0.4 sin 3θ", wLabel: "0.5 cos 5θ",
+    xRange: [-1, 1], yRange: [-1, 1], zRange: [-0.4, 0.4], wRange: [-0.5, 0.5],
+  },
+];
+
+// ─── State ───
+let presetIdx = 0;
+let rotation = { x: 0.3, y: -0.4 };
+let zoom = 1;
+let animPhase = 0;
+let playing = true;
+let dragging = false;
+let lastMouse = { x: 0, y: 0 };
+let animId = null;
+
+const canvas = document.getElementById("curveCanvas");
+const ctx = canvas.getContext("2d");
+
+// ─── Helpers ───
+function evalParam(expr, t) {
+  try { return new Function("t", "return " + expr)(t); }
+  catch { return 0; }
+}
+
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r, g, b;
+  if (h < 60)       { r=c; g=x; b=0; }
+  else if (h < 120) { r=x; g=c; b=0; }
+  else if (h < 180) { r=0; g=c; b=x; }
+  else if (h < 240) { r=0; g=x; b=c; }
+  else if (h < 300) { r=x; g=0; b=c; }
+  else              { r=c; g=0; b=x; }
+  return `rgb(${(r+m)*255|0},${(g+m)*255|0},${(b+m)*255|0})`;
+}
+
+// ─── Render ───
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const p = PRESETS[presetIdx];
+  const steps = 2000;
+  const cx = W / 2, cy = H / 2;
+  const scale = Math.min(W, H) * 0.28 * zoom;
+  const cosRx = Math.cos(rotation.x), sinRx = Math.sin(rotation.x);
+  const cosRy = Math.cos(rotation.y), sinRy = Math.sin(rotation.y);
+
+  const xMid = (p.xRange[0] + p.xRange[1]) / 2;
+  const yMid = (p.yRange[0] + p.yRange[1]) / 2;
+  const zMid = (p.zRange[0] + p.zRange[1]) / 2;
+  const xHalf = (p.xRange[1] - p.xRange[0]) / 2;
+  const yHalf = (p.yRange[1] - p.yRange[0]) / 2;
+  const zHalf = (p.zRange[1] - p.zRange[0]) / 2;
+  const wMax = Math.max(Math.abs(p.wRange[0]), Math.abs(p.wRange[1])) || 1;
+
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * Math.PI * 2;
+    let px = (evalParam(p.x, t) - xMid) / xHalf;
+    let py = (evalParam(p.y, t) - yMid) / yHalf;
+    let pz = (evalParam(p.z, t) - zMid) / zHalf;
+    const w = evalParam(p.w, t);
+
+    // 3D rotation
+    const x1 = px * cosRy - pz * sinRy;
+    const z1 = px * sinRy + pz * cosRy;
+    const y1 = py * cosRx - z1 * sinRx;
+    const z2 = py * sinRx + z1 * cosRx;
+
+    const hue = ((w / wMax + 1) / 2) * 300 + animPhase;
+    pts.push({ x: cx + x1 * scale, y: cy + y1 * scale, z: z2, hue });
+  }
+
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const alpha = 0.4 + 0.6 * ((b.z + 1) / 2);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = hslToRgb(b.hue, 80, 55 + 15 * ((b.z + 1) / 2));
+    ctx.globalAlpha = Math.max(0.2, Math.min(1, alpha));
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ─── Animation loop ───
+function tick() {
+  if (!playing) return;
+  animPhase = (animPhase + 0.3) % 360;
+  draw();
+  animId = requestAnimationFrame(tick);
+}
+
+function startAnim() { if (playing && !animId) animId = requestAnimationFrame(tick); }
+function stopAnim()  { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+
+// ─── UI updates ───
+function updateUI() {
+  const p = PRESETS[presetIdx];
+
+  // Equations
+  document.getElementById("equations").innerHTML =
+    `<div><span class="var-x">x</span> = ${p.xLabel}</div>` +
+    `<div><span class="var-y">y</span> = ${p.yLabel}</div>` +
+    `<div><span class="var-z">z</span> = ${p.zLabel}</div>` +
+    `<div><span class="var-w">w</span> = ${p.wLabel} <span class="dim">[→ hue]</span></div>` +
+    `<div class="hint">DRAG · SCROLL · PINCH</div>`;
+
+  // Param cards
+  const cards = [
+    { l:"X", cls:"card-x", r:p.xRange, m:"cartesian" },
+    { l:"Y", cls:"card-y", r:p.yRange, m:"cartesian" },
+    { l:"Z", cls:"card-z", r:p.zRange, m:"depth" },
+    { l:"W", cls:"card-w", r:p.wRange, m:"→ color" },
+  ];
+  document.getElementById("paramCards").innerHTML = cards.map(c =>
+    `<div class="param-card ${c.cls}">` +
+      `<div class="label">${c.l}</div>` +
+      `<div class="range">RANGE: ${c.r[0].toFixed(2)}<br>to ${c.r[1].toFixed(2)}</div>` +
+      `<div class="mapping">${c.m}</div>` +
+    `</div>`
+  ).join("");
+
+  // Preset indicator
+  document.getElementById("presetIndicator").textContent =
+    `PRESET: ${p.name} (${presetIdx + 1}/${PRESETS.length})`;
+
+  draw();
+}
+
+// ─── Controls ───
+function setTab(tab) {
+  document.getElementById("tabParametric").classList.toggle("active", tab === "parametric");
+  document.getElementById("tabFourier").classList.toggle("active", tab === "fourier");
+}
+
+function prevPreset() {
+  presetIdx = (presetIdx - 1 + PRESETS.length) % PRESETS.length;
+  updateUI();
+}
+function nextPreset() {
+  presetIdx = (presetIdx + 1) % PRESETS.length;
+  updateUI();
+}
+
+function togglePlay() {
+  playing = !playing;
+  document.getElementById("playBtn").textContent = playing ? "⏸" : "▶";
+  if (playing) startAnim(); else stopAnim();
+}
+
+// ─── Mouse / Touch ───
+canvas.addEventListener("mousedown", e => {
+  dragging = true;
+  lastMouse = { x: e.clientX, y: e.clientY };
+  canvas.classList.add("grabbing");
+});
+window.addEventListener("mousemove", e => {
+  if (!dragging) return;
+  rotation.y += (e.clientX - lastMouse.x) * 0.005;
+  rotation.x += (e.clientY - lastMouse.y) * 0.005;
+  lastMouse = { x: e.clientX, y: e.clientY };
+  if (!playing) draw();
+});
+window.addEventListener("mouseup", () => {
+  dragging = false;
+  canvas.classList.remove("grabbing");
+});
+
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  zoom = Math.max(0.3, Math.min(5, zoom - e.deltaY * 0.001));
+  if (!playing) draw();
+}, { passive: false });
+
+canvas.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) {
+    dragging = true;
+    lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+}, { passive: true });
+canvas.addEventListener("touchmove", e => {
+  if (!dragging || e.touches.length !== 1) return;
+  rotation.y += (e.touches[0].clientX - lastMouse.x) * 0.005;
+  rotation.x += (e.touches[0].clientY - lastMouse.y) * 0.005;
+  lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (!playing) draw();
+}, { passive: true });
+canvas.addEventListener("touchend", () => { dragging = false; });
+
+window.addEventListener("resize", () => draw());
+
+// ─── Keyboard shortcuts ───
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft")  prevPreset();
+  if (e.key === "ArrowRight") nextPreset();
+  if (e.key === " ") { e.preventDefault(); togglePlay(); }
+});
+
+// ─── Init ───
+updateUI();
+startAnim();
+</script>
+</body>
+</html>
