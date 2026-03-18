@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nDAO BEATS · User Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0c0f;--bgR:#10131a;--bgP:#141820;--bgI:#1a1e28;
+    --bdr:#1e2230;--bdrL:#252a38;
+    --tx:#9a9fb0;--txB:#e0e4f0;--txD:#656a7e;--txM:#4a4f64;--txG:#353a50;
+    --red:#ff5555;--grn:#44dd66;--blu:#3399ff;--yel:#ffcc22;
+    --beats:#ff8833;--xpr:#7b68ee;--cyn:#44ddee;--pur:#aa77ff;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--tx);
+    font-family:'JetBrains Mono','Fira Code',monospace;
+    font-size:13px;line-height:1.8;
+    overflow-x:hidden;-webkit-tap-highlight-color:transparent;
+  }
+  ::selection{background:rgba(123,104,238,.3);color:var(--txB)}
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdrL);border-radius:3px}
+
+  /* ── Header ── */
+  .top-bar{
+    position:sticky;top:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;height:50px;
+    background:rgba(16,19,26,.95);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--bdr);
+  }
+  .top-bar .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .top-bar .logo-text{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--beats);letter-spacing:.08em}
+  .top-bar .logo-sub{font-size:9px;color:var(--txM);letter-spacing:.15em}
+  .top-bar .back-btn{
+    display:flex;align-items:center;gap:6px;
+    background:none;border:1px solid var(--bdrL);color:var(--beats);
+    font-family:inherit;font-size:10px;letter-spacing:.08em;
+    padding:6px 14px;border-radius:5px;cursor:pointer;text-decoration:none;
+    transition:all .15s;
+  }
+  .top-bar .back-btn:hover{border-color:var(--beats);background:rgba(255,136,51,.06)}
+
+  /* ── Layout ── */
+  .page{display:flex;max-width:1200px;margin:0 auto;min-height:calc(100vh - 50px)}
+
+  /* ── Sidebar TOC ── */
+  .sidebar{
+    width:260px;flex-shrink:0;position:sticky;top:50px;height:calc(100vh - 50px);
+    overflow-y:auto;padding:24px 16px;border-right:1px solid var(--bdr);
+  }
+  .sidebar::-webkit-scrollbar{width:3px}
+  .toc-title{font-size:8px;letter-spacing:.2em;color:var(--txM);margin-bottom:14px;text-transform:uppercase}
+  .toc a{
+    display:block;padding:5px 10px;margin-bottom:2px;border-radius:4px;
+    font-size:10px;color:var(--txD);text-decoration:none;
+    transition:all .12s;border-left:2px solid transparent;
+  }
+  .toc a:hover{color:var(--txB);background:rgba(255,255,255,.03);border-left-color:var(--beats)}
+  .toc a.sub{padding-left:22px;font-size:9px;color:var(--txG)}
+  .toc a.sub:hover{color:var(--tx)}
+  .toc .divider{height:1px;background:var(--bdr);margin:10px 8px}
+
+  /* ── Content ── */
+  .content{flex:1;padding:40px 48px 80px;max-width:800px;min-width:0}
+
+  h1{
+    font-family:'Orbitron',monospace;font-size:28px;font-weight:700;
+    color:var(--beats);letter-spacing:.04em;
+    margin-bottom:8px;padding-bottom:12px;
+    border-bottom:1px solid var(--bdr);
+  }
+  h1 .version{font-size:11px;color:var(--txM);font-family:'JetBrains Mono',monospace;font-weight:400;margin-left:12px}
+
+  h2{
+    font-family:'Orbitron',monospace;font-size:18px;font-weight:600;
+    color:var(--xpr);letter-spacing:.04em;
+    margin:48px 0 16px;padding-top:24px;
+    border-top:1px solid var(--bdr);
+  }
+  h2 .num{color:var(--txG);font-size:14px;margin-right:8px}
+
+  h3{
+    font-size:14px;font-weight:600;color:var(--cyn);
+    margin:28px 0 10px;letter-spacing:.03em;
+  }
+  h3::before{content:'▸ ';color:var(--txG)}
+
+  p{margin-bottom:14px;color:var(--tx)}
+
+  ul,ol{margin:0 0 16px 20px}
+  li{margin-bottom:6px;color:var(--tx)}
+  li::marker{color:var(--txG)}
+
+  strong{color:var(--txB);font-weight:600}
+  em{color:var(--txD);font-style:italic}
+
+  a{color:var(--xpr);text-decoration:none;border-bottom:1px solid rgba(123,104,238,.3);transition:all .15s}
+  a:hover{color:var(--cyn);border-bottom-color:var(--cyn)}
+
+  /* ── Code blocks ── */
+  code{
+    background:var(--bgI);border:1px solid var(--bdr);border-radius:3px;
+    padding:1px 6px;font-size:11px;color:var(--cyn);
+  }
+  pre{
+    background:var(--bgI);border:1px solid var(--bdr);border-radius:6px;
+    padding:14px 18px;margin:12px 0 18px;overflow-x:auto;
+    font-size:11px;line-height:1.7;color:var(--cyn);
+  }
+  pre code{background:none;border:none;padding:0}
+
+  /* ── Key-Value pairs ── */
+  .kv{
+    display:flex;gap:8px;padding:4px 0 4px 16px;margin-bottom:4px;
+    font-size:12px;border-left:2px solid var(--bdr);
+  }
+  .kv .k{color:var(--xpr);font-weight:600;min-width:120px;flex-shrink:0}
+  .kv .v{color:var(--tx)}
+
+  /* ── Tables ── */
+  table{
+    width:100%;border-collapse:collapse;margin:14px 0 20px;
+    font-size:11px;
+  }
+  th{
+    text-align:left;padding:8px 12px;
+    background:var(--xpr);color:#fff;font-weight:600;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  }
+  td{
+    padding:7px 12px;border-bottom:1px solid var(--bdr);color:var(--tx);
+  }
+  tr:hover td{background:rgba(255,255,255,.015)}
+  td code{font-size:10px}
+
+  /* ── Callout boxes ── */
+  .callout{
+    border-left:3px solid var(--beats);background:rgba(255,136,51,.04);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;
+    font-size:12px;line-height:1.7;
+  }
+  .callout.info{border-left-color:var(--blu);background:rgba(51,153,255,.04)}
+  .callout.warn{border-left-color:var(--yel);background:rgba(255,204,34,.04)}
+  .callout.chain{border-left-color:var(--xpr);background:rgba(123,104,238,.04)}
+  .callout .label{font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--txM);margin-bottom:4px;text-transform:uppercase}
+
+  /* ── Section anchors ── */
+  [id]{scroll-margin-top:70px}
+
+  /* ── Footer ── */
+  .page-footer{
+    text-align:center;padding:40px 24px;
+    border-top:1px solid var(--bdr);font-size:10px;color:var(--txG);
+    letter-spacing:.06em;
+  }
+  .page-footer a{color:var(--xpr);border:none}
+
+  /* ── Mobile TOC toggle ── */
+  .toc-toggle{
+    display:none;position:fixed;bottom:20px;right:20px;z-index:200;
+    background:var(--xpr);color:#fff;border:none;
+    width:48px;height:48px;border-radius:50%;cursor:pointer;
+    font-size:18px;box-shadow:0 4px 20px rgba(123,104,238,.4);
+    transition:transform .2s;font-family:inherit;
+  }
+  .toc-toggle:active{transform:scale(.9)}
+
+  .mob-toc{
+    display:none;position:fixed;inset:0;z-index:150;
+    background:rgba(0,0,0,.7);backdrop-filter:blur(6px);
+  }
+  .mob-toc.show{display:flex;align-items:flex-end;justify-content:center}
+  .mob-toc-inner{
+    background:var(--bgP);border:1px solid var(--bdr);
+    border-radius:16px 16px 0 0;width:100%;max-width:500px;max-height:70vh;
+    overflow-y:auto;padding:20px 16px 30px;
+  }
+  .mob-toc-inner .toc-title{font-size:10px;margin-bottom:12px}
+  .mob-toc-inner .toc a{padding:10px 12px;font-size:12px;border-radius:6px}
+  .mob-toc-inner .toc a.sub{padding-left:28px;font-size:11px}
+  .mob-toc-close{
+    display:flex;justify-content:flex-end;margin-bottom:8px;
+  }
+  .mob-toc-close button{
+    background:none;border:none;color:var(--txD);font-size:20px;cursor:pointer;
+    padding:4px 8px;line-height:1;
+  }
+
+  /* ── Responsive — Tablet (≤900px) ── */
+  @media(max-width:900px){
+    .sidebar{display:none}
+    .toc-toggle{display:flex;align-items:center;justify-content:center}
+    .content{padding:28px 24px 80px}
+    h1{font-size:22px} h2{font-size:16px}
+    .kv{flex-direction:column;gap:2px}
+    .kv .k{min-width:auto}
+    table{font-size:10px}
+    th,td{padding:6px 8px}
+    pre{font-size:10px;padding:10px 14px}
+  }
+
+  /* ── Responsive — Mobile (≤640px) ── */
+  @media(max-width:640px){
+    .top-bar{padding:0 12px;height:44px}
+    .top-bar .logo-text{font-size:12px}
+    .top-bar .logo-sub{font-size:7px;letter-spacing:.12em}
+    .top-bar .back-btn{font-size:8px;padding:5px 10px}
+
+    .content{padding:20px 16px 80px}
+
+    h1{font-size:18px;letter-spacing:.02em}
+    h1 .version{font-size:9px;display:block;margin-left:0;margin-top:4px}
+    h2{font-size:15px;margin:32px 0 12px;padding-top:16px}
+    h2 .num{font-size:12px;margin-right:6px}
+    h3{font-size:12px;margin:20px 0 8px}
+    p{font-size:12px;line-height:1.7;margin-bottom:10px}
+    li{font-size:12px;margin-bottom:4px}
+    ul,ol{margin-left:16px}
+
+    .kv{padding:3px 0 3px 12px;font-size:11px;margin-bottom:3px}
+    .kv .k{font-size:11px;min-width:auto}
+    .kv .v{font-size:11px}
+
+    code{font-size:10px;padding:1px 4px}
+    pre{font-size:9px;padding:10px 12px;margin:8px 0 14px;border-radius:4px}
+    pre code{font-size:9px}
+
+    table{font-size:9px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    th{font-size:8px;padding:6px 8px;letter-spacing:.06em}
+    td{padding:8px;font-size:10px}
+    td code{font-size:9px}
+
+    .callout{padding:10px 12px;font-size:11px;margin:12px 0}
+    .callout .label{font-size:8px}
+
+    .toc-toggle{bottom:16px;right:16px;width:44px;height:44px;font-size:16px}
+  }
+
+  /* ── Responsive — Small phone (≤400px) ── */
+  @media(max-width:400px){
+    .top-bar .logo-text{font-size:11px}
+    .top-bar .back-btn{font-size:7px;padding:4px 8px}
+    .content{padding:16px 12px 80px}
+    h1{font-size:16px}
+    h2{font-size:14px}
+    p,li{font-size:11px}
+    pre{font-size:8px}
+  }
+
+  /* ── Landscape phone ── */
+  @media(max-height:500px) and (max-width:900px){
+    .top-bar{height:36px}
+    .top-bar .logo-sub{display:none}
+    .content{padding:16px 20px 60px}
+    h1{font-size:18px} h2{font-size:14px;margin:24px 0 10px;padding-top:12px}
+    .toc-toggle{bottom:12px;right:12px;width:38px;height:38px;font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="top-bar">
+  <div class="logo">
+    <span class="logo-text">nDAO BEATS</span>
+    <span class="logo-sub">USER GUIDE</span>
+  </div>
+  <a href="ndao-beats-synthesizer.html" class="back-btn">← BACK TO SYNTHESIZER</a>
+</div>
+
+<div class="page">
+
+<!-- Sidebar TOC -->
+<nav class="sidebar">
+  <div class="toc-title">CONTENTS</div>
+  <div class="toc">
+    <a href="#intro">1. Introduction</a>
+    <a href="#getting-started">2. Getting Started</a>
+    <a href="#getting-started-interface" class="sub">Interface Overview</a>
+    <a href="#getting-started-first" class="sub">First Steps</a>
+    <div class="divider"></div>
+    <a href="#curves">3. Curve Modes</a>
+    <a href="#curves-parametric" class="sub">Parametric</a>
+    <a href="#curves-fourier" class="sub">Fourier</a>
+    <a href="#curves-audio" class="sub">Audio Synth</a>
+    <div class="divider"></div>
+    <a href="#audio">4. Audio Engine</a>
+    <a href="#audio-osc" class="sub">Oscillators</a>
+    <a href="#audio-filter" class="sub">Filter</a>
+    <a href="#audio-lfo" class="sub">LFO</a>
+    <a href="#audio-mapping" class="sub">Curve → Audio</a>
+    <div class="divider"></div>
+    <a href="#blockchain">5. Blockchain</a>
+    <a href="#blockchain-connect" class="sub">Connecting</a>
+    <a href="#blockchain-balance" class="sub">Balance</a>
+    <div class="divider"></div>
+    <a href="#minting">6. Minting</a>
+    <a href="#minting-steps" class="sub">How to Mint</a>
+    <a href="#minting-stored" class="sub">What Gets Stored</a>
+    <div class="divider"></div>
+    <a href="#memo">7. Memo Format</a>
+    <a href="#memo-fields" class="sub">Field Reference</a>
+    <a href="#memo-osc" class="sub">Oscillator Format</a>
+    <a href="#memo-tip" class="sub">Tip Format</a>
+    <div class="divider"></div>
+    <a href="#controls">8. Controls</a>
+    <a href="#controls-keyboard" class="sub">Keyboard</a>
+    <a href="#controls-mouse" class="sub">Mouse & Touch</a>
+    <div class="divider"></div>
+    <a href="#faq">9. FAQ</a>
+    <a href="#reference">10. Technical Ref</a>
+  </div>
+</nav>
+
+<!-- Content -->
+<main class="content">
+
+<!-- 1. Introduction -->
+<h1 id="intro">nDAO BEATS <span class="version">v1.0 — User Guide</span></h1>
+<p>The <strong>nDAO BEATS Parametric Curve Synthesizer</strong> is a browser-based creative tool that combines 3D parametric curve visualization with real-time audio synthesis and <strong>XPR Network blockchain integration</strong>. Design visual curves, map their mathematical properties to audio frequencies and filters, and permanently record your compositions on-chain using <strong>$BEATS</strong> tokens.</p>
+
+<h3>Key Features</h3>
+<ul>
+  <li>Interactive 3D parametric and Fourier curve visualization with hue-mapped rendering</li>
+  <li>Multi-oscillator audio synthesizer with waveform selection, filter, and LFO modulation</li>
+  <li>Curve-to-audio mapping: <code>X→frequency</code> <code>Y→filter</code> <code>Z→detune</code> <code>W→volume</code></li>
+  <li>Live XPR Network blockchain integration via WebAuth wallet</li>
+  <li>Mint compositions on-chain with full synth data in the transaction memo</li>
+  <li><strong>$BEATS</strong> token (precision 8) via <code>tokencreate</code> contract on <code>nftitledao</code></li>
+  <li>Export curves as PNG, JSON, or shareable links</li>
+  <li>Favourites system with local persistence</li>
+</ul>
+
+<!-- 2. Getting Started -->
+<h2 id="getting-started"><span class="num">02</span>Getting Started</h2>
+<p>Open <code>ndao-beats-synthesizer.html</code> in any modern browser (Chrome, Firefox, Edge, Safari). No installation or build step required — everything runs client-side.</p>
+
+<h3 id="getting-started-interface">Interface Overview</h3>
+<ul>
+  <li><strong>Header Bar</strong> — Mode tabs (Parametric, Fourier, Audio Synth), playback controls, Favourites, Wallet</li>
+  <li><strong>Canvas Area</strong> — 3D curve rendering with drag-to-rotate and scroll-to-zoom</li>
+  <li><strong>Left Panel Cards</strong> — X, Y, Z, W parameter cards showing ranges — click to open editor</li>
+  <li><strong>Side Panel</strong> — Opens on right for Editor, Presets, Favourites, Audio Synth, and Chain panels</li>
+  <li><strong>Equation Display</strong> — Top-left overlay showing current parametric equations</li>
+  <li><strong>Audio Visualizer</strong> — Bottom frequency bar showing real-time audio spectrum</li>
+</ul>
+
+<h3 id="getting-started-first">First Steps</h3>
+<ol>
+  <li>The app launches with the <strong>Butterfly</strong> preset in Parametric mode</li>
+  <li>Drag the canvas to rotate the 3D curve; scroll to zoom</li>
+  <li>Press <code>A</code> to open the Audio Synth panel, then click <strong>▶ PLAY AUDIO</strong></li>
+  <li>Press <code>W</code> or click <strong>⚡ CONNECT WALLET</strong> to link your WebAuth wallet</li>
+  <li>Use <code>← →</code> arrow keys to cycle through presets</li>
+</ol>
+
+<!-- 3. Curve Modes -->
+<h2 id="curves"><span class="num">03</span>Parametric Curve Modes</h2>
+
+<h3 id="curves-parametric">Parametric Mode</h3>
+<p>Renders 3D curves defined by four parametric equations:</p>
+<div class="kv"><span class="k">x(θ)</span><span class="v">Controls horizontal position</span></div>
+<div class="kv"><span class="k">y(θ)</span><span class="v">Controls vertical position</span></div>
+<div class="kv"><span class="k">z(θ)</span><span class="v">Controls depth (3D rotation affects visibility)</span></div>
+<div class="kv"><span class="k">w(θ)</span><span class="v">Maps to hue color — the curve is rainbow-colored based on this value</span></div>
+<p><strong>8 built-in presets:</strong> Butterfly, Lissajous, Rose, Trefoil, Spirograph, Figure-8, Hypocycloid, Star.</p>
+<p>Open the Equation Editor (press <code>E</code>) to modify equations live. The app auto-detects value ranges.</p>
+
+<h3 id="curves-fourier">Fourier Mode</h3>
+<p>Displays 2D Fourier series decompositions as waveforms. Individual harmonics are shown faintly behind the composed signal. <strong>4 presets:</strong> Square Wave, Sawtooth, Triangle Wave, Pulse.</p>
+
+<h3 id="curves-audio">Audio Synth Mode</h3>
+<p>Identical to Parametric mode but opens the Audio Synthesizer panel automatically. The curve's mathematical values drive the audio engine in real-time.</p>
+
+<!-- 4. Audio Engine -->
+<h2 id="audio"><span class="num">04</span>Audio Synthesizer Engine</h2>
+<p>The synthesizer uses the <strong>Web Audio API</strong> to generate real-time sound from multiple oscillators, processed through a filter with LFO modulation.</p>
+
+<h3 id="audio-osc">Oscillators</h3>
+<p>Add up to 8 oscillators. Each has:</p>
+<div class="kv"><span class="k">Waveform</span><span class="v"><code>sine</code>, <code>triangle</code>, <code>sawtooth</code>, or <code>square</code></span></div>
+<div class="kv"><span class="k">Frequency</span><span class="v">20–20,000 Hz (defaults: 220, 330, 440 Hz)</span></div>
+<div class="kv"><span class="k">Detune</span><span class="v">±100 cents fine-tuning</span></div>
+<div class="kv"><span class="k">Gain</span><span class="v">0–100% individual volume</span></div>
+
+<h3 id="audio-filter">Filter</h3>
+<p>A biquad filter processes the combined oscillator output:</p>
+<div class="kv"><span class="k">Type</span><span class="v"><code>lowpass</code>, <code>highpass</code>, <code>bandpass</code>, or <code>notch</code></span></div>
+<div class="kv"><span class="k">Cutoff</span><span class="v">50–15,000 Hz</span></div>
+<div class="kv"><span class="k">Resonance (Q)</span><span class="v">0.1–20.0</span></div>
+
+<h3 id="audio-lfo">LFO (Low Frequency Oscillator)</h3>
+<p>Modulates the filter cutoff frequency for movement and texture:</p>
+<div class="kv"><span class="k">Rate</span><span class="v">0.01–20 Hz</span></div>
+<div class="kv"><span class="k">Depth</span><span class="v">0–500 (modulation intensity in Hz)</span></div>
+
+<h3 id="audio-mapping">Curve → Audio Mapping</h3>
+<p>When audio is playing, the animated curve position modulates the audio in real-time:</p>
+<div class="kv"><span class="k" style="color:var(--red)">X axis</span><span class="v">Modulates oscillator frequencies (adds Hz offset)</span></div>
+<div class="kv"><span class="k" style="color:var(--grn)">Y axis</span><span class="v">Modulates filter cutoff frequency</span></div>
+<div class="kv"><span class="k" style="color:var(--blu)">Z axis</span><span class="v">Modulates oscillator detune (cents)</span></div>
+<div class="kv"><span class="k" style="color:var(--yel)">W axis</span><span class="v">Modulates volume envelope (amplitude)</span></div>
+
+<div class="callout">
+  <div class="label">How it works</div>
+  As the curve animates, each point's X/Y/Z/W coordinates are sampled and applied to the audio parameters. This creates a continuously evolving soundscape driven entirely by the curve's shape.
+</div>
+
+<!-- 5. Blockchain -->
+<h2 id="blockchain"><span class="num">05</span>Blockchain Integration</h2>
+
+<h3>XPR Network</h3>
+<p>The app connects to <strong>XPR Network mainnet</strong> via WebAuth wallet. XPR Network is a layer-1 proof-of-stake blockchain with zero gas fees and fast finality.</p>
+
+<div class="kv"><span class="k">Chain</span><span class="v">XPR Network Mainnet</span></div>
+<div class="kv"><span class="k">Token Contract</span><span class="v"><code>tokencreate</code></span></div>
+<div class="kv"><span class="k">Token Symbol</span><span class="v"><code>BEATS</code></span></div>
+<div class="kv"><span class="k">Precision</span><span class="v">8 decimal places (e.g. <code>1.00000000 BEATS</code>)</span></div>
+<div class="kv"><span class="k">Auth Account</span><span class="v"><code>nftitledao</code></span></div>
+<div class="kv"><span class="k">Explorer</span><span class="v"><a href="https://explorer.xprnetwork.org" target="_blank">explorer.xprnetwork.org</a></span></div>
+
+<h3 id="blockchain-connect">Connecting Your Wallet</h3>
+<ol>
+  <li>Click <strong>⚡ CONNECT WALLET</strong> in the header (or press <code>W</code>)</li>
+  <li>The WebAuth wallet selector modal appears</li>
+  <li>Authenticate with your WebAuth wallet (biometric or password)</li>
+  <li>Once connected, your account name and BEATS balance display in the header</li>
+  <li>Sessions persist — returning to the page auto-restores your session</li>
+</ol>
+
+<div class="callout chain">
+  <div class="label">WebAuth SDK</div>
+  The app loads <code>@proton/web-sdk v4.2.20</code> from cdnjs (Cloudflare) with automatic fallback to unpkg and jsdelivr. If the SDK fails to load, the Connect button is disabled with a clear error.
+</div>
+
+<h3 id="blockchain-balance">Balance & Endpoints</h3>
+<p>The app queries your $BEATS balance with automatic endpoint fallback across 5 XPR Network API nodes. Balance auto-refreshes every 30 seconds while connected.</p>
+
+<!-- 6. Minting -->
+<h2 id="minting"><span class="num">06</span>Minting Compositions On-Chain</h2>
+<p>Minting permanently records your current curve and synthesizer configuration on the XPR Network blockchain.</p>
+
+<h3 id="minting-steps">How to Mint</h3>
+<ol>
+  <li>Connect your wallet (see Section 5)</li>
+  <li>Configure your curve and audio settings</li>
+  <li>Open the Chain panel (press <code>W</code> or click your account name)</li>
+  <li>Review the <strong>CURRENT SYNTH STATE</strong> — shows all oscillators, filter, LFO, and curve data</li>
+  <li>Review the <strong>ON-CHAIN MEMO PREVIEW</strong> — the exact string written to the blockchain</li>
+  <li>Click <strong>⛓ MINT ON-CHAIN (1 BEATS)</strong> — WebAuth prompts for approval</li>
+  <li>Approve the transaction in your WebAuth wallet</li>
+  <li>The confirmed TX appears in the Transaction Log with a link to <a href="https://explorer.xprnetwork.org" target="_blank">explorer.xprnetwork.org</a></li>
+</ol>
+
+<h3 id="minting-stored">What Gets Stored</h3>
+<p>Each mint sends <code>1.00000000 BEATS</code> to the <code>nftitledao</code> account. The transaction memo contains a compact encoding of your full synth state — oscillator waveforms, frequencies, detune values, gains, filter type/cutoff/Q, LFO rate/depth, master volume, curve name, mode, and timestamp.</p>
+
+<div class="callout warn">
+  <div class="label">Important</div>
+  All transactions are <strong>LIVE on XPR Network mainnet</strong>. When you mint, real BEATS tokens are transferred. This is not a testnet or demo.
+</div>
+
+<!-- 7. Memo Format -->
+<h2 id="memo"><span class="num">07</span>On-Chain Memo Format</h2>
+<p>The transaction memo encodes your complete synthesizer state in a compact semicolon-delimited format (max 256 characters for XPR Network).</p>
+
+<h3>Example Memo</h3>
+<pre><code>nDAO_BEATS_v1;curve:Butterfly;mode:parametric;osc:[sin:220Hz:d0:g0.8|tri:330Hz:d5:g0.4|saw:440Hz:d-3:g0.2];flt:low@2000Hz/Q1.0;lfo:0.5Hz*20;vol:30%;t:1711000000000</code></pre>
+
+<h3 id="memo-fields">Field Reference</h3>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><code>nDAO_BEATS_v1</code></td><td>Protocol identifier and version</td></tr>
+  <tr><td><code>curve:{name}</code></td><td>Active curve preset name or "custom"</td></tr>
+  <tr><td><code>mode:{mode}</code></td><td>Active mode: <code>parametric</code>, <code>fourier</code>, or <code>audio</code></td></tr>
+  <tr><td><code>osc:[...]</code></td><td>Oscillator array — each entry: waveform:frequency:detune:gain</td></tr>
+  <tr><td><code>flt:{type}@{freq}/{Q}</code></td><td>Filter type (3 chars), cutoff Hz, and resonance Q</td></tr>
+  <tr><td><code>lfo:{rate}*{depth}</code></td><td>LFO rate in Hz and modulation depth</td></tr>
+  <tr><td><code>vol:{percent}</code></td><td>Master volume as percentage</td></tr>
+  <tr><td><code>t:{timestamp}</code></td><td>Unix timestamp in milliseconds</td></tr>
+</table>
+
+<h3 id="memo-osc">Oscillator Entry Format</h3>
+<pre><code>{wave}:{freq}Hz:d{detune}:g{gain}</code></pre>
+<p>Example: <code>sin:220Hz:d0:g0.8</code> means sine wave at 220 Hz, 0 cents detune, 80% gain. Multiple oscillators are pipe-delimited (<code>|</code>).</p>
+
+<h3 id="memo-tip">Tip Memo Format</h3>
+<pre><code>nDAO_BEATS_tip;from:{account};curve:{name};amt:{amount};t:{timestamp}</code></pre>
+
+<!-- 8. Controls -->
+<h2 id="controls"><span class="num">08</span>Keyboard Shortcuts &amp; Controls</h2>
+
+<h3 id="controls-keyboard">Keyboard</h3>
+<table>
+  <tr><th>Key</th><th>Function</th></tr>
+  <tr><td><code>Space</code></td><td>Play / Pause curve animation</td></tr>
+  <tr><td><code>← →</code></td><td>Cycle through presets</td></tr>
+  <tr><td><code>E</code></td><td>Toggle Equation Editor panel</td></tr>
+  <tr><td><code>P</code></td><td>Toggle Presets browser panel</td></tr>
+  <tr><td><code>A</code></td><td>Toggle Audio Synthesizer panel</td></tr>
+  <tr><td><code>F</code></td><td>Toggle Favourites panel</td></tr>
+  <tr><td><code>W</code></td><td>Connect wallet / Toggle Chain panel</td></tr>
+  <tr><td><code>R</code></td><td>Generate random curve</td></tr>
+  <tr><td><code>M</code></td><td>Toggle audio playback (start/stop sound)</td></tr>
+  <tr><td><code>+ / -</code></td><td>Increase / decrease animation speed</td></tr>
+  <tr><td><code>Escape</code></td><td>Close all panels and modals</td></tr>
+</table>
+
+<h3 id="controls-mouse">Mouse &amp; Touch</h3>
+<table>
+  <tr><th>Action</th><th>Function</th></tr>
+  <tr><td>Left-click + Drag</td><td>Rotate 3D curve view</td></tr>
+  <tr><td>Scroll Wheel</td><td>Zoom in/out</td></tr>
+  <tr><td>Right-click</td><td>Context menu (edit, presets, random, fav, export, mint, reset)</td></tr>
+  <tr><td>Click parameter card</td><td>Select parameter and open editor</td></tr>
+  <tr><td>Touch drag</td><td>Rotate 3D curve view (mobile)</td></tr>
+</table>
+
+<!-- 9. FAQ -->
+<h2 id="faq"><span class="num">09</span>Frequently Asked Questions</h2>
+
+<p><strong>Q: What is $BEATS?</strong><br>
+BEATS is a token on XPR Network created via the <code>tokencreate</code> contract with 8 decimal precision. It is used within the nDAO BEATS ecosystem for minting compositions and tipping.</p>
+
+<p><strong>Q: Do I need $BEATS to use the app?</strong><br>
+No. The curve visualizer and audio synthesizer work without a wallet. You only need BEATS tokens to mint compositions on-chain or send tips.</p>
+
+<p><strong>Q: What wallet do I need?</strong><br>
+A WebAuth wallet on XPR Network. Download the WebAuth app from <a href="https://webauth.com" target="_blank">webauth.com</a> and create an account.</p>
+
+<p><strong>Q: Are transactions real?</strong><br>
+Yes. All transactions go through XPR Network mainnet. When you mint, <code>1.00000000 BEATS</code> is transferred live on-chain to the <code>nftitledao</code> account.</p>
+
+<p><strong>Q: Where can I verify my transactions?</strong><br>
+Every confirmed transaction includes a link to <a href="https://explorer.xprnetwork.org" target="_blank">explorer.xprnetwork.org</a> where you can view the full transaction details including the memo data.</p>
+
+<p><strong>Q: What happens if the SDK fails to load?</strong><br>
+The app tries 4 CDN sources (cdnjs Cloudflare, unpkg, jsdelivr, cdnjs unminified). If all fail, the wallet button shows ⚠ SDK FAILED. Refresh the page or check your internet connection.</p>
+
+<p><strong>Q: Can I edit equations?</strong><br>
+Yes. Open the Equation Editor (press <code>E</code>) and modify any equation field. Use standard math functions: <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>abs</code>, <code>sqrt</code>. The app auto-detects value ranges.</p>
+
+<!-- 10. Technical Reference -->
+<h2 id="reference"><span class="num">10</span>Technical Reference</h2>
+
+<h3>Technology Stack</h3>
+<div class="kv"><span class="k">Frontend</span><span class="v">Single-file HTML5, vanilla JavaScript, Canvas 2D API</span></div>
+<div class="kv"><span class="k">Audio</span><span class="v">Web Audio API (OscillatorNode, BiquadFilterNode, AnalyserNode)</span></div>
+<div class="kv"><span class="k">Blockchain SDK</span><span class="v">@proton/web-sdk v4.2.20 via cdnjs.cloudflare.com</span></div>
+<div class="kv"><span class="k">Wallet</span><span class="v">WebAuth (ProtonWebSDK) with session persistence</span></div>
+<div class="kv"><span class="k">Fonts</span><span class="v">JetBrains Mono (monospace), Orbitron (display)</span></div>
+
+<h3>API Endpoints (with automatic fallback)</h3>
+<ol>
+  <li><code>proton.eosusa.io</code> (primary)</li>
+  <li><code>proton.cryptolions.io</code></li>
+  <li><code>api.protonnz.com</code></li>
+  <li><code>proton.pink.gg</code></li>
+  <li><code>proton.greymass.com</code></li>
+</ol>
+
+<h3>Token Details</h3>
+<div class="kv"><span class="k">Contract</span><span class="v"><code>tokencreate</code></span></div>
+<div class="kv"><span class="k">Symbol</span><span class="v"><code>BEATS</code></span></div>
+<div class="kv"><span class="k">Precision</span><span class="v">8 (e.g. <code>1.00000000 BEATS</code>)</span></div>
+<div class="kv"><span class="k">Authorization</span><span class="v"><code>nftitledao</code></span></div>
+<div class="kv"><span class="k">Chain ID</span><span class="v"><code>384da888112027f0321850a169f737c33e53b388aad48b5adace4bab97f437e0</code></span></div>
+<div class="kv"><span class="k">Explorer</span><span class="v"><a href="https://explorer.xprnetwork.org" target="_blank">explorer.xprnetwork.org</a></span></div>
+
+</main>
+</div>
+
+<div class="page-footer">
+  nDAO BEATS · <a href="https://ubitquity.io" target="_blank">UBITQUITY, INC.</a> · One Block at a Time® · 2026<br>
+  <a href="ndao-beats-synthesizer.html">← Back to Synthesizer</a>
+</div>
+
+<!-- Mobile TOC toggle button -->
+<button class="toc-toggle" id="tocToggle" onclick="document.getElementById('mobToc').classList.add('show')" aria-label="Table of Contents">☰</button>
+
+<!-- Mobile TOC drawer -->
+<div class="mob-toc" id="mobToc" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="mob-toc-inner">
+    <div class="mob-toc-close"><button onclick="document.getElementById('mobToc').classList.remove('show')">×</button></div>
+    <div class="toc-title">CONTENTS</div>
+    <div class="toc">
+      <a href="#intro" onclick="closeMobToc()">1. Introduction</a>
+      <a href="#getting-started" onclick="closeMobToc()">2. Getting Started</a>
+      <a href="#getting-started-interface" class="sub" onclick="closeMobToc()">Interface Overview</a>
+      <a href="#getting-started-first" class="sub" onclick="closeMobToc()">First Steps</a>
+      <div class="divider"></div>
+      <a href="#curves" onclick="closeMobToc()">3. Curve Modes</a>
+      <a href="#curves-parametric" class="sub" onclick="closeMobToc()">Parametric</a>
+      <a href="#curves-fourier" class="sub" onclick="closeMobToc()">Fourier</a>
+      <a href="#curves-audio" class="sub" onclick="closeMobToc()">Audio Synth</a>
+      <div class="divider"></div>
+      <a href="#audio" onclick="closeMobToc()">4. Audio Engine</a>
+      <a href="#audio-osc" class="sub" onclick="closeMobToc()">Oscillators</a>
+      <a href="#audio-filter" class="sub" onclick="closeMobToc()">Filter</a>
+      <a href="#audio-lfo" class="sub" onclick="closeMobToc()">LFO</a>
+      <a href="#audio-mapping" class="sub" onclick="closeMobToc()">Curve → Audio</a>
+      <div class="divider"></div>
+      <a href="#blockchain" onclick="closeMobToc()">5. Blockchain</a>
+      <a href="#blockchain-connect" class="sub" onclick="closeMobToc()">Connecting</a>
+      <a href="#blockchain-balance" class="sub" onclick="closeMobToc()">Balance</a>
+      <div class="divider"></div>
+      <a href="#minting" onclick="closeMobToc()">6. Minting</a>
+      <a href="#minting-steps" class="sub" onclick="closeMobToc()">How to Mint</a>
+      <a href="#minting-stored" class="sub" onclick="closeMobToc()">What Gets Stored</a>
+      <div class="divider"></div>
+      <a href="#memo" onclick="closeMobToc()">7. Memo Format</a>
+      <a href="#memo-fields" class="sub" onclick="closeMobToc()">Field Reference</a>
+      <a href="#memo-osc" class="sub" onclick="closeMobToc()">Oscillator Format</a>
+      <a href="#memo-tip" class="sub" onclick="closeMobToc()">Tip Format</a>
+      <div class="divider"></div>
+      <a href="#controls" onclick="closeMobToc()">8. Controls</a>
+      <a href="#faq" onclick="closeMobToc()">9. FAQ</a>
+      <a href="#reference" onclick="closeMobToc()">10. Technical Ref</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function closeMobToc(){setTimeout(()=>document.getElementById('mobToc').classList.remove('show'),150)}
+</script>
+
+</body>
+</html>
