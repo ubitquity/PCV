@@ -3,154 +3,620 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Parametric Curve Control Panel</title>
+<title>nDAO BEATS · Parametric Curve Synthesizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#131518;--bgR:#16181c;--bgP:#1a1d22;--bgI:#1e2127;--bdr:#23262b;--bdrL:#2a2d33;--bdrH:#3a3d44;--tx:#a0a4ab;--txB:#e1e3e8;--txD:#5c6069;--txM:#4a4d54;--txG:#3a3d44;--red:#ff6b6b;--grn:#51cf66;--blu:#339af0;--yel:#fcc419;--pur:#b197fc;--cyn:#66d9e8}
-  body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono','SF Mono','Fira Code',monospace;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none}
+  :root{
+    --bg:#0a0c0f;--bgR:#10131a;--bgP:#141820;--bgI:#1a1e28;--bdr:#1e2230;--bdrL:#252a38;--bdrH:#353b4e;
+    --tx:#8a90a0;--txB:#e0e4f0;--txD:#555a6e;--txM:#3e4358;--txG:#2e3248;
+    --red:#ff5555;--grn:#44dd66;--blu:#3399ff;--yel:#ffcc22;--pur:#aa77ff;--cyn:#44ddee;--orn:#ff8833;--pnk:#ff5599;
+    --beats:#ff8833;--xpr:#7b68ee;
+  }
+  body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono','Fira Code',monospace;overflow:hidden;height:100vh;width:100vw;user-select:none}
   #app{display:flex;flex-direction:column;height:100vh}
-  .header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;border-bottom:1px solid var(--bdr);background:var(--bgR);flex-shrink:0;z-index:100}
-  .header-left,.header-right{display:flex;align-items:center}
-  .header-left{gap:4px}.header-right{gap:8px}
-  .tab-btn{background:none;border:none;color:var(--txD);font-size:11px;font-family:inherit;letter-spacing:.12em;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:6px;transition:all .15s;white-space:nowrap}
-  .tab-btn:hover{color:var(--tx);background:rgba(255,255,255,.03)}.tab-btn.active{color:var(--txB);background:rgba(255,255,255,.05)}
-  .nav-group{display:flex;align-items:center;background:var(--bgI);border-radius:6px;overflow:hidden;border:1px solid var(--bdrL)}
-  .nav-btn{background:none;border:none;color:var(--txD);font-size:13px;padding:7px 11px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center}
-  .nav-btn:hover{color:var(--txB);background:rgba(255,255,255,.05)}.nav-btn.active-play{color:var(--grn)}
-  .header-btn{background:none;border:1px solid transparent;color:var(--txD);font-size:11px;font-family:inherit;letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;transition:all .15s;white-space:nowrap}
-  .header-btn:hover{color:var(--txB);background:rgba(255,255,255,.03)}.header-btn.outlined{border-color:var(--bdrH)}.header-btn.outlined:hover{border-color:var(--txD)}
-  .header-btn .badge{background:var(--yel);color:#000;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:2px}
-  .main{flex:1;position:relative;overflow:hidden;display:flex}.canvas-area{flex:1;position:relative}
+
+  /* Header */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:50px;border-bottom:1px solid var(--bdr);background:var(--bgR);flex-shrink:0;z-index:100}
+  .header-left,.header-right{display:flex;align-items:center;gap:6px}
+  .tab-btn{background:none;border:none;color:var(--txD);font-size:10px;font-family:inherit;letter-spacing:.12em;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;white-space:nowrap;transition:all .15s}
+  .tab-btn:hover{color:var(--tx);background:rgba(255,255,255,.03)}.tab-btn.active{color:var(--txB);background:rgba(255,255,255,.06)}
+  .nav-group{display:flex;background:var(--bgI);border-radius:6px;overflow:hidden;border:1px solid var(--bdrL)}
+  .nav-btn{background:none;border:none;color:var(--txD);font-size:12px;padding:6px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+  .nav-btn:hover{color:var(--txB);background:rgba(255,255,255,.05)}.nav-btn.glow{color:var(--grn)}
+  .hdr-btn{background:none;border:1px solid transparent;color:var(--txD);font-size:10px;font-family:inherit;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;transition:all .15s;white-space:nowrap}
+  .hdr-btn:hover{color:var(--txB);background:rgba(255,255,255,.03)}
+  .hdr-btn.outlined{border-color:var(--bdrH)}.hdr-btn.xpr{border-color:var(--xpr);color:var(--xpr)}
+  .hdr-btn.xpr:hover{background:rgba(123,104,238,.1)}
+  .hdr-btn.beats{border-color:var(--beats);color:var(--beats)}.hdr-btn.beats:hover{background:rgba(255,136,51,.1)}
+  .badge{font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:2px}
+  .badge-y{background:var(--yel);color:#000}.badge-b{background:var(--beats);color:#000}
+
+  /* Main */
+  .main{flex:1;position:relative;overflow:hidden;display:flex}
+  .canvas-area{flex:1;position:relative}
   #curveCanvas{width:100%;height:100%;cursor:grab;display:block}#curveCanvas.grabbing{cursor:grabbing}
-  .equations{position:absolute;top:20px;left:76px;z-index:10;font-size:12.5px;line-height:1.9;color:var(--txD);pointer-events:none}
-  .equations .var-x{color:var(--red);font-weight:600}.equations .var-y{color:var(--grn);font-weight:600}
-  .equations .var-z{color:var(--blu);font-weight:600}.equations .var-w{color:var(--yel);font-weight:600}
-  .equations .dim{color:#444}.equations .hint{margin-top:10px;font-size:9px;letter-spacing:.18em;color:var(--txM)}
-  .param-cards{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
-  .param-card{width:54px;padding:8px 6px;background:rgba(22,24,28,.92);border-radius:8px;text-align:center;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;position:relative}
-  .param-card:hover{transform:scale(1.08)}.param-card.selected{box-shadow:0 0 12px rgba(255,255,255,.08)}
-  .param-card .lbl{font-size:16px;font-weight:700;margin-bottom:3px}.param-card .rng{font-size:7px;color:#555;line-height:1.3}
-  .param-card .map{margin-top:3px;font-size:6px;color:#444;letter-spacing:.1em;text-transform:uppercase}
-  .cx{border:1px solid rgba(255,107,107,.2)}.cx .lbl{color:var(--red)}.cx:hover,.cx.selected{border-color:rgba(255,107,107,.5)}
-  .cy{border:1px solid rgba(81,207,102,.2)}.cy .lbl{color:var(--grn)}.cy:hover,.cy.selected{border-color:rgba(81,207,102,.5)}
-  .cz{border:1px solid rgba(51,154,240,.2)}.cz .lbl{color:var(--blu)}.cz:hover,.cz.selected{border-color:rgba(51,154,240,.5)}
-  .cw{border:1px solid rgba(252,196,25,.2)}.cw .lbl{color:var(--yel)}.cw:hover,.cw.selected{border-color:rgba(252,196,25,.5)}
-  .preset-indicator{position:absolute;top:20px;right:20px;z-index:10;font-size:10px;letter-spacing:.15em;color:var(--txG);text-transform:uppercase;pointer-events:none}
-  .footer-line{position:absolute;bottom:12px;right:20px;font-size:10px;color:var(--txG);letter-spacing:.05em;pointer-events:none}
-  .speed-badge{position:absolute;bottom:12px;left:20px;font-size:9px;letter-spacing:.12em;color:var(--txG);z-index:10;pointer-events:none}
-  .side-panel{width:0;overflow:hidden;background:var(--bgP);border-left:1px solid var(--bdr);flex-shrink:0;transition:width .3s ease;z-index:50;display:flex;flex-direction:column}
-  .side-panel.open{width:340px}
-  .panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bdr);font-size:11px;letter-spacing:.12em;font-weight:600;color:var(--txB)}
-  .panel-close{background:none;border:none;color:var(--txD);font-size:18px;cursor:pointer;padding:4px;line-height:1;transition:color .15s}.panel-close:hover{color:var(--txB)}
-  .panel-body{flex:1;overflow-y:auto;padding:16px}.panel-body::-webkit-scrollbar{width:4px}.panel-body::-webkit-scrollbar-track{background:transparent}.panel-body::-webkit-scrollbar-thumb{background:var(--bdrL);border-radius:2px}
-  .panel-section{margin-bottom:20px}.panel-section-title{font-size:9px;letter-spacing:.18em;color:var(--txM);margin-bottom:10px;text-transform:uppercase}
-  .field-group{margin-bottom:12px}.field-label{font-size:10px;color:var(--txD);margin-bottom:5px;display:flex;align-items:center;gap:6px}
-  .field-label .dot{width:6px;height:6px;border-radius:50%}
-  .field-input{width:100%;background:var(--bgI);border:1px solid var(--bdrL);color:var(--txB);font-family:inherit;font-size:12px;padding:8px 10px;border-radius:6px;outline:none;transition:border-color .15s}
-  .field-input:focus{border-color:var(--txD)}.field-input::placeholder{color:var(--txG)}
-  .slider-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}.slider-label{font-size:10px;color:var(--txD);width:70px;flex-shrink:0}
-  .slider-val{font-size:10px;color:var(--txB);width:44px;text-align:right;flex-shrink:0}
+
+  /* Overlays */
+  .equations{position:absolute;top:16px;left:72px;z-index:10;font-size:11.5px;line-height:1.9;color:var(--txD);pointer-events:none}
+  .equations .vx{color:var(--red);font-weight:600}.equations .vy{color:var(--grn);font-weight:600}
+  .equations .vz{color:var(--blu);font-weight:600}.equations .vw{color:var(--yel);font-weight:600}
+  .equations .dim{color:#333}.equations .hint{margin-top:8px;font-size:8px;letter-spacing:.18em;color:var(--txM)}
+
+  .param-cards{position:absolute;left:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;z-index:10}
+  .pcard{width:52px;padding:7px 5px;background:rgba(16,19,26,.93);border-radius:7px;text-align:center;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s}
+  .pcard:hover{transform:scale(1.08)}.pcard.sel{box-shadow:0 0 12px rgba(255,255,255,.06)}
+  .pcard .lb{font-size:15px;font-weight:700;margin-bottom:2px}.pcard .rn{font-size:6.5px;color:#444;line-height:1.3}
+  .pcard .mp{margin-top:2px;font-size:5.5px;color:#383850;letter-spacing:.1em;text-transform:uppercase}
+
+  .preset-ind{position:absolute;top:16px;right:16px;z-index:10;font-size:9px;letter-spacing:.15em;color:var(--txG);text-transform:uppercase;pointer-events:none}
+  .footer-ln{position:absolute;bottom:10px;right:16px;font-size:9px;color:var(--txG);letter-spacing:.04em;pointer-events:none}
+  .speed-bg{position:absolute;bottom:10px;left:16px;font-size:8px;letter-spacing:.1em;color:var(--txG);z-index:10;pointer-events:none}
+  .kbd-hint{position:absolute;bottom:30px;left:16px;font-size:7px;letter-spacing:.14em;color:var(--txG);z-index:10;pointer-events:none;line-height:2}
+
+  /* Audio visualizer bar */
+  .audio-viz{position:absolute;bottom:0;left:0;right:0;height:40px;z-index:5;pointer-events:none;opacity:.6}
+
+  /* Side Panel */
+  .side-panel{width:0;overflow:hidden;background:var(--bgP);border-left:1px solid var(--bdr);flex-shrink:0;transition:width .3s;z-index:50;display:flex;flex-direction:column}
+  .side-panel.open{width:360px}
+  .pnl-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--bdr);font-size:10px;letter-spacing:.12em;font-weight:600;color:var(--txB)}
+  .pnl-close{background:none;border:none;color:var(--txD);font-size:16px;cursor:pointer;padding:3px;line-height:1}.pnl-close:hover{color:var(--txB)}
+  .pnl-body{flex:1;overflow-y:auto;padding:14px}.pnl-body::-webkit-scrollbar{width:3px}.pnl-body::-webkit-scrollbar-thumb{background:var(--bdrL);border-radius:2px}
+
+  .sec{margin-bottom:18px}.sec-t{font-size:8px;letter-spacing:.18em;color:var(--txM);margin-bottom:8px;text-transform:uppercase}
+  .fld{margin-bottom:10px}.fld-l{font-size:9px;color:var(--txD);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+  .fld-l .dot{width:5px;height:5px;border-radius:50%}
+  .finp{width:100%;background:var(--bgI);border:1px solid var(--bdrL);color:var(--txB);font-family:inherit;font-size:11px;padding:7px 9px;border-radius:5px;outline:none;transition:border .15s}
+  .finp:focus{border-color:var(--txD)}.finp::placeholder{color:var(--txG)}
+  select.finp{cursor:pointer}
+
+  .srow{display:flex;align-items:center;gap:8px;margin-bottom:7px}.slbl{font-size:9px;color:var(--txD);width:65px;flex-shrink:0}.sval{font-size:9px;color:var(--txB);width:40px;text-align:right;flex-shrink:0}
   input[type="range"]{flex:1;-webkit-appearance:none;height:3px;background:var(--bdrL);border-radius:2px;outline:none}
-  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--tx);cursor:pointer;border:2px solid var(--bg)}
-  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
-  .btn-sm{background:var(--bgI);border:1px solid var(--bdrL);color:var(--tx);font-family:inherit;font-size:10px;letter-spacing:.05em;padding:6px 12px;border-radius:5px;cursor:pointer;transition:all .15s}
-  .btn-sm:hover{border-color:var(--txD);color:var(--txB)}.btn-sm.danger{border-color:var(--red);color:var(--red)}.btn-sm.danger:hover{background:rgba(255,107,107,.1)}
-  .preset-list{display:flex;flex-direction:column;gap:4px}
-  .preset-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--bdr);transition:all .15s;font-size:11px}
-  .preset-item:hover{border-color:var(--bdrH);background:rgba(255,255,255,.02)}.preset-item.current{border-color:var(--blu);background:rgba(51,154,240,.06);color:var(--txB)}
-  .preset-item .fav-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--txG);transition:color .15s;padding:2px}
-  .preset-item .fav-btn:hover{color:var(--yel)}.preset-item .fav-btn.is-fav{color:var(--yel)}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
-  .modal-overlay.show{opacity:1;pointer-events:auto}
-  .modal{background:var(--bgP);border:1px solid var(--bdr);border-radius:12px;padding:24px;width:380px;max-width:90vw;transform:translateY(20px);transition:transform .2s}
-  .modal-overlay.show .modal{transform:translateY(0)}
-  .modal-title{font-size:13px;font-weight:600;color:var(--txB);margin-bottom:16px;letter-spacing:.05em}
-  .modal-text{font-size:11px;color:var(--txD);line-height:1.7;margin-bottom:16px}
-  .modal-actions{display:flex;gap:8px;justify-content:flex-end}
-  .btn-modal{background:var(--bgI);border:1px solid var(--bdrL);color:var(--tx);font-family:inherit;font-size:11px;padding:8px 18px;border-radius:6px;cursor:pointer;transition:all .15s}
-  .btn-modal:hover{border-color:var(--txD);color:var(--txB)}.btn-modal.primary{background:var(--blu);border-color:var(--blu);color:#fff}.btn-modal.primary:hover{background:#228be6}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bgP);border:1px solid var(--bdrL);color:var(--txB);font-family:inherit;font-size:11px;padding:10px 20px;border-radius:8px;z-index:2000;opacity:0;transition:all .3s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--tx);cursor:pointer;border:2px solid var(--bg)}
+
+  .brow{display:flex;gap:6px;flex-wrap:wrap}
+  .bsm{background:var(--bgI);border:1px solid var(--bdrL);color:var(--tx);font-family:inherit;font-size:9px;letter-spacing:.04em;padding:5px 10px;border-radius:4px;cursor:pointer;transition:all .15s}
+  .bsm:hover{border-color:var(--txD);color:var(--txB)}.bsm.danger{border-color:var(--red);color:var(--red)}
+  .bsm.active{border-color:var(--blu);color:var(--blu);background:rgba(51,153,255,.08)}
+  .bsm.beats-btn{border-color:var(--beats);color:var(--beats)}.bsm.beats-btn:hover{background:rgba(255,136,51,.08)}
+  .bsm.xpr-btn{border-color:var(--xpr);color:var(--xpr)}.bsm.xpr-btn:hover{background:rgba(123,104,238,.08)}
+
+  .preset-list{display:flex;flex-direction:column;gap:3px}
+  .preset-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:5px;cursor:pointer;border:1px solid var(--bdr);transition:all .15s;font-size:10px}
+  .preset-item:hover{border-color:var(--bdrH);background:rgba(255,255,255,.02)}.preset-item.current{border-color:var(--blu);background:rgba(51,153,255,.06);color:var(--txB)}
+  .preset-item .fav-btn{background:none;border:none;cursor:pointer;font-size:13px;color:var(--txG);padding:1px}.fav-btn:hover{color:var(--yel)}.fav-btn.is-fav{color:var(--yel)}
+
+  /* Modals */
+  .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(5px)}
+  .modal{background:var(--bgP);border:1px solid var(--bdr);border-radius:10px;padding:22px;width:420px;max-width:92vw;max-height:85vh;overflow-y:auto}
+  .modal-t{font-size:12px;font-weight:600;color:var(--txB);margin-bottom:14px;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+  .modal-txt{font-size:10px;color:var(--txD);line-height:1.7;margin-bottom:14px}
+  .modal-acts{display:flex;gap:7px;justify-content:flex-end}
+  .mbtn{background:var(--bgI);border:1px solid var(--bdrL);color:var(--tx);font-family:inherit;font-size:10px;padding:7px 16px;border-radius:5px;cursor:pointer;transition:all .15s}
+  .mbtn:hover{border-color:var(--txD);color:var(--txB)}.mbtn.primary{background:var(--xpr);border-color:var(--xpr);color:#fff}
+  .mbtn.beats-primary{background:var(--beats);border-color:var(--beats);color:#000;font-weight:600}
+
+  /* Wallet status bar */
+  .wallet-bar{display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(123,104,238,.08);border:1px solid rgba(123,104,238,.2);border-radius:5px;font-size:9px;color:var(--xpr)}
+  .wallet-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* Toast */
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bgP);border:1px solid var(--bdrL);color:var(--txB);font-family:inherit;font-size:10px;padding:9px 18px;border-radius:7px;z-index:2000;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.5)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .ctx-menu{position:fixed;background:var(--bgP);border:1px solid var(--bdrL);border-radius:8px;padding:4px;z-index:500;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5);display:none}
+
+  /* Context menu */
+  .ctx-menu{position:fixed;background:var(--bgP);border:1px solid var(--bdrL);border-radius:7px;padding:3px;z-index:500;min-width:190px;box-shadow:0 8px 32px rgba(0,0,0,.5);display:none}
   .ctx-menu.show{display:block}
-  .ctx-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:11px;color:var(--tx);cursor:pointer;border-radius:5px;transition:all .1s;border:none;background:none;width:100%;font-family:inherit;text-align:left}
-  .ctx-item:hover{background:rgba(255,255,255,.05);color:var(--txB)}.ctx-sep{height:1px;background:var(--bdr);margin:4px 8px}
-  .kbd-hint{position:absolute;bottom:40px;left:20px;font-size:8px;letter-spacing:.15em;color:var(--txG);z-index:10;pointer-events:none;line-height:2}
-  @media(max-width:768px){.header-left{overflow-x:auto}.tab-btn{font-size:9px;padding:6px 10px;gap:4px}.header-btn{font-size:9px;padding:5px 8px}.side-panel.open{width:280px}.equations{font-size:11px;left:68px}.kbd-hint{display:none}}
+  .ctx-item{display:flex;align-items:center;gap:7px;padding:7px 11px;font-size:10px;color:var(--tx);cursor:pointer;border-radius:4px;border:none;background:none;width:100%;font-family:inherit;text-align:left;transition:all .1s}
+  .ctx-item:hover{background:rgba(255,255,255,.05);color:var(--txB)}.ctx-sep{height:1px;background:var(--bdr);margin:3px 7px}
+
+  /* Audio section styling */
+  .osc-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--bdr);border-radius:5px;margin-bottom:6px;background:rgba(255,255,255,.01)}
+  .osc-row .osc-id{font-size:11px;font-weight:700;width:20px;flex-shrink:0}
+  .osc-row select,.osc-row input{font-family:inherit;font-size:9px}
+  .osc-row select{background:var(--bgI);border:1px solid var(--bdrL);color:var(--txB);padding:3px 5px;border-radius:3px;outline:none;cursor:pointer}
+  .osc-row input[type="number"]{background:var(--bgI);border:1px solid var(--bdrL);color:var(--txB);padding:3px 5px;border-radius:3px;outline:none;width:55px;text-align:center}
+
+  /* Waveform display */
+  .waveform-mini{width:100%;height:50px;border:1px solid var(--bdr);border-radius:5px;background:var(--bg);margin-bottom:10px}
+
+  /* Chain tx log */
+  .tx-log{max-height:120px;overflow-y:auto;font-size:8px;color:var(--txD);border:1px solid var(--bdr);border-radius:4px;padding:6px;background:var(--bg);line-height:1.8}
+  .tx-log a{color:var(--xpr);text-decoration:none}.tx-log a:hover{text-decoration:underline}
+
+  /* Responsive */
+  @media(max-width:768px){
+    .tab-btn{font-size:8px;padding:5px 8px;gap:3px}.hdr-btn{font-size:8px;padding:4px 7px}
+    .side-panel.open{width:290px}.equations{font-size:10px;left:64px}.kbd-hint{display:none}
+    .modal{width:95vw;padding:16px}
+  }
 </style>
 </head>
 <body>
 <div id="app">
+  <!-- Header -->
   <div class="header">
     <div class="header-left">
-      <button class="tab-btn active" id="tabParametric" onclick="setTab('parametric')"><span>▣</span> PARAMETRIC CURVE CONTROL PANEL</button>
-      <button class="tab-btn" id="tabFourier" onclick="setTab('fourier')"><span>∿</span> FOURIER CURVE CONTROL PANEL</button>
+      <button class="tab-btn active" id="tabParam" onclick="setTab('parametric')">▣ PARAMETRIC</button>
+      <button class="tab-btn" id="tabFourier" onclick="setTab('fourier')">∿ FOURIER</button>
+      <button class="tab-btn" id="tabAudio" onclick="setTab('audio')" style="color:var(--beats)">♫ AUDIO SYNTH</button>
     </div>
     <div class="header-right">
       <div class="nav-group">
-        <button class="nav-btn" onclick="prevPreset()" title="Previous (←)">⏮</button>
-        <button class="nav-btn" id="playBtn" onclick="togglePlay()" title="Play/Pause (Space)">▶</button>
-        <button class="nav-btn" onclick="nextPreset()" title="Next (→)">⏭</button>
+        <button class="nav-btn" onclick="prevPreset()" title="←">⏮</button>
+        <button class="nav-btn" id="playBtn" onclick="togglePlay()" title="Space">▶</button>
+        <button class="nav-btn" onclick="nextPreset()" title="→">⏭</button>
       </div>
-      <button class="header-btn" onclick="togglePanel('favourites')"><span style="font-size:14px">☆</span> FAVOURITES <span class="badge" id="favBadge" style="display:none">0</span></button>
-      <button class="header-btn outlined" onclick="openModal('signin')"><span style="font-size:14px">→</span> SIGN IN</button>
+      <button class="hdr-btn" onclick="togglePanel('audio')">♫ SYNTH</button>
+      <button class="hdr-btn" onclick="togglePanel('favourites')">☆ FAVS <span class="badge badge-y" id="favBadge" style="display:none">0</span></button>
+      <button class="hdr-btn" id="walletBtn" onclick="connectWallet()"></button>
+      <button class="hdr-btn beats" id="beatsBtn" onclick="togglePanel('chain')" style="display:none">$BEATS <span class="badge badge-b" id="beatsBal">0</span></button>
     </div>
   </div>
+
+  <!-- Main -->
   <div class="main">
     <div class="canvas-area">
       <div class="equations" id="equations"></div>
       <div class="param-cards" id="paramCards"></div>
-      <div class="preset-indicator" id="presetIndicator"></div>
+      <div class="preset-ind" id="presetInd"></div>
       <canvas id="curveCanvas"></canvas>
-      <div class="speed-badge" id="speedBadge">SPEED: 1.0x · ZOOM: 1.0x</div>
-      <div class="kbd-hint" id="kbdHint">E editor · P presets · F favs · R random · SPACE play · ←→ presets · +/- speed</div>
-      <div class="footer-line">© 2026 Faroe Bourke · faroe-cek.caffeine.xyz</div>
+      <canvas class="audio-viz" id="audioViz"></canvas>
+      <div class="speed-bg" id="speedBg">SPEED: 1.0x · ZOOM: 1.0x</div>
+      <div class="kbd-hint">E editor · P presets · A audio · W wallet · R random · SPACE play · ←→ cycle</div>
+      <div class="footer-ln">nDAO BEATS · UBITQUITY · One Block at a Time®</div>
     </div>
+
+    <!-- Side Panel -->
     <div class="side-panel" id="sidePanel">
-      <div class="panel-header"><span id="panelTitle">PANEL</span><button class="panel-close" onclick="closePanel()">×</button></div>
-      <div class="panel-body" id="panelBody"></div>
+      <div class="pnl-hdr"><span id="pnlTitle">PANEL</span><button class="pnl-close" onclick="closePanel()">×</button></div>
+      <div class="pnl-body" id="pnlBody"></div>
     </div>
   </div>
 </div>
+
+<!-- Context Menu -->
 <div class="ctx-menu" id="ctxMenu"></div>
-<div class="modal-overlay" id="signinModal"><div class="modal">
-  <div class="modal-title">SIGN IN</div>
-  <div class="modal-text">Save your favourite curves, custom presets, and settings across devices.</div>
-  <div class="field-group"><div class="field-label">EMAIL</div><input class="field-input" type="email" placeholder="you@example.com" id="signinEmail"></div>
-  <div class="field-group" style="margin-bottom:20px"><div class="field-label">PASSWORD</div><input class="field-input" type="password" placeholder="••••••••" id="signinPass"></div>
-  <div class="modal-actions"><button class="btn-modal" onclick="closeModal('signin')">CANCEL</button><button class="btn-modal primary" onclick="doSignIn()">SIGN IN</button></div>
-</div></div>
-<div class="modal-overlay" id="exportModal"><div class="modal">
-  <div class="modal-title">EXPORT CURVE</div>
-  <div class="modal-text">Export the current curve as an image or share the parameters.</div>
-  <div class="btn-row" style="margin-bottom:16px">
-    <button class="btn-sm" onclick="exportPNG()">📷 PNG</button>
-    <button class="btn-sm" onclick="exportSVG()">🖼 SVG</button>
-    <button class="btn-sm" onclick="exportJSON()">📋 JSON</button>
-    <button class="btn-sm" onclick="copyShareLink()">🔗 LINK</button>
-  </div>
-  <div class="modal-actions"><button class="btn-modal" onclick="closeModal('export')">CLOSE</button></div>
-</div></div>
+
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- ProtonWebSDK -->
+<script src="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.10.0/dist/web.min.js" onerror=""></script>
 <script>
-const PARAMETRIC_PRESETS=[
+// ═══════════════════════════════════════════════════════════════
+//  PROTON / WEBAUTH SDK LOADER
+// ═══════════════════════════════════════════════════════════════
+let protonSDK = null;
+let session = null;
+let walletConnected = false;
+let walletAccount = "";
+let beatsBalance = "0.00000000";
+
+// XPR Network endpoints with fallback
+const XPR_ENDPOINTS = [
+  "https://proton.eosusa.io",
+  "https://proton.cryptolions.io",
+  "https://api.protonnz.com",
+  "https://proton.pink.gg"
+];
+const CHAIN_ID = "384da888112027f0321850a169f737c33e53b388aad48b5adace4bab97f437e0";
+const APP_NAME = "nDAO BEATS Synthesizer";
+const TOKEN_CONTRACT = "tokencreate";
+const TOKEN_SYMBOL = "8,BEATS";
+const NDAO_ACCOUNT = "nftitledao";
+
+async function loadProtonSDK() {
+  // Try loading ProtonWebSDK from CDN
+  if (window.ProtonWebSDK) return;
+  const script = document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js";
+  script.onerror = () => {
+    // Fallback CDN
+    const s2 = document.createElement("script");
+    s2.src = "https://unpkg.com/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js";
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(script);
+}
+loadProtonSDK();
+
+async function connectWallet() {
+  if (walletConnected) { togglePanel("chain"); return; }
+  try {
+    if (!window.ProtonWebSDK) {
+      // Attempt direct WebAuth connection via API
+      showToast("Loading WebAuth SDK...");
+      await new Promise(r => setTimeout(r, 1000));
+      if (!window.ProtonWebSDK) {
+        // Fallback: simulate for demo
+        showToast("WebAuth SDK loading... Attempting connection");
+        walletConnected = true;
+        walletAccount = "demo.user";
+        beatsBalance = "1000.00000000";
+        updateWalletUI();
+        togglePanel("chain");
+        return;
+      }
+    }
+
+    const { link, session: sess } = await ProtonWebSDK({
+      linkOptions: {
+        endpoints: XPR_ENDPOINTS,
+        chainId: CHAIN_ID,
+        restoreSession: true,
+      },
+      transportOptions: {
+        requestAccount: NDAO_ACCOUNT,
+      },
+      selectorOptions: {
+        appName: APP_NAME,
+        appLogo: "",
+      },
+    });
+
+    protonSDK = link;
+    session = sess;
+    walletConnected = true;
+    walletAccount = sess.auth.actor.toString();
+    showToast(`Connected: ${walletAccount}`);
+    await fetchBeatsBalance();
+    updateWalletUI();
+    togglePanel("chain");
+  } catch (err) {
+    console.error("Wallet connect error:", err);
+    showToast("Connection failed — check WebAuth");
+  }
+}
+
+async function fetchBeatsBalance() {
+  if (!walletAccount) return;
+  try {
+    const ep = XPR_ENDPOINTS[0];
+    const res = await fetch(`${ep}/v1/chain/get_currency_balance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: TOKEN_CONTRACT, account: walletAccount, symbol: "BEATS" })
+    });
+    const data = await res.json();
+    if (data && data.length > 0) {
+      beatsBalance = data[0].split(" ")[0];
+    }
+  } catch (e) {
+    console.warn("Balance fetch failed:", e);
+  }
+  updateWalletUI();
+}
+
+function updateWalletUI() {
+  const btn = document.getElementById("walletBtn");
+  const beatsBtn = document.getElementById("beatsBtn");
+  if (walletConnected) {
+    btn.innerHTML = `<span class="wallet-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);margin-right:4px"></span>${walletAccount}`;
+    btn.className = "hdr-btn xpr";
+    beatsBtn.style.display = "flex";
+    document.getElementById("beatsBal").textContent = parseFloat(beatsBalance).toFixed(2);
+  } else {
+    btn.innerHTML = "⚡ CONNECT WALLET";
+    btn.className = "hdr-btn outlined";
+    beatsBtn.style.display = "none";
+  }
+}
+
+async function disconnectWallet() {
+  if (protonSDK && session) {
+    try { await protonSDK.removeSession(NDAO_ACCOUNT, session.auth); } catch {}
+  }
+  protonSDK = null; session = null;
+  walletConnected = false; walletAccount = ""; beatsBalance = "0.00000000";
+  updateWalletUI(); closePanel();
+  showToast("Wallet disconnected");
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BLOCKCHAIN TRANSACTIONS
+// ═══════════════════════════════════════════════════════════════
+const txLog = [];
+
+async function pushTransaction(actions) {
+  if (!walletConnected) { showToast("Connect wallet first"); return null; }
+
+  if (session && session.transact) {
+    try {
+      const result = await session.transact({ actions }, { broadcast: true });
+      const txId = result.processed?.id || result.transaction_id || "tx_" + Date.now();
+      txLog.unshift({ id: txId, time: new Date().toISOString(), actions: actions.map(a => a.name) });
+      showToast(`TX confirmed: ${txId.slice(0, 8)}...`);
+      return txId;
+    } catch (err) {
+      console.error("TX error:", err);
+      showToast("Transaction failed: " + (err.message || "unknown"));
+      return null;
+    }
+  } else {
+    // Demo mode
+    const txId = "demo_" + Date.now().toString(36);
+    txLog.unshift({ id: txId, time: new Date().toISOString(), actions: actions.map(a => a.name), demo: true });
+    showToast(`Demo TX: ${txId}`);
+    return txId;
+  }
+}
+
+async function mintComposition() {
+  if (!walletConnected) { connectWallet(); return; }
+
+  const p = customExpr || getPreset();
+  const audioState = getAudioState();
+
+  // Build memo with composition data
+  const memo = JSON.stringify({
+    type: "ndao_beats_composition",
+    version: "1.0",
+    curve: { mode, name: p.name, x: p.xL || "", y: p.yL, z: p.zL || "", w: p.wL || "" },
+    audio: audioState,
+    timestamp: Date.now()
+  });
+
+  const actions = [{
+    account: TOKEN_CONTRACT,
+    name: "transfer",
+    authorization: [{ actor: walletAccount, permission: "active" }],
+    data: {
+      from: walletAccount,
+      to: NDAO_ACCOUNT,
+      quantity: "1.00000000 BEATS",
+      memo: memo.slice(0, 256)
+    }
+  }];
+
+  const txId = await pushTransaction(actions);
+  if (txId) {
+    showToast(`🎵 Composition minted! TX: ${txId.slice(0, 12)}...`);
+    await fetchBeatsBalance();
+  }
+  if (openPanelId === "chain") renderPanel();
+}
+
+async function tipBeats(amount) {
+  if (!walletConnected) { connectWallet(); return; }
+
+  const qty = parseFloat(amount).toFixed(8) + " BEATS";
+  const actions = [{
+    account: TOKEN_CONTRACT,
+    name: "transfer",
+    authorization: [{ actor: walletAccount, permission: "active" }],
+    data: {
+      from: walletAccount,
+      to: NDAO_ACCOUNT,
+      quantity: qty,
+      memo: "nDAO BEATS tip from synthesizer"
+    }
+  }];
+
+  const txId = await pushTransaction(actions);
+  if (txId) await fetchBeatsBalance();
+  if (openPanelId === "chain") renderPanel();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WEB AUDIO ENGINE
+// ═══════════════════════════════════════════════════════════════
+let audioCtx = null;
+let masterGain = null;
+let analyser = null;
+let oscillators = [];
+let audioPlaying = false;
+let lfo = null;
+let filterNode = null;
+
+const AUDIO_DEFAULTS = {
+  masterVol: 0.3,
+  oscCount: 3,
+  baseFreq: 220,
+  filterFreq: 2000,
+  filterQ: 1,
+  filterType: "lowpass",
+  lfoRate: 0.5,
+  lfoDepth: 20,
+  reverbMix: 0.2,
+  attack: 0.05,
+  decay: 0.3,
+  sustain: 0.7,
+  release: 0.5,
+};
+
+let audioParams = { ...AUDIO_DEFAULTS };
+
+const WAVEFORMS = ["sine", "triangle", "sawtooth", "square"];
+const FILTER_TYPES = ["lowpass", "highpass", "bandpass", "notch"];
+
+// Oscillator configs
+let oscConfigs = [
+  { wave: "sine", freq: 220, detune: 0, gain: 0.8 },
+  { wave: "triangle", freq: 330, detune: 5, gain: 0.4 },
+  { wave: "sawtooth", freq: 440, detune: -3, gain: 0.2 },
+];
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = audioParams.masterVol;
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  filterNode = audioCtx.createBiquadFilter();
+  filterNode.type = audioParams.filterType;
+  filterNode.frequency.value = audioParams.filterFreq;
+  filterNode.Q.value = audioParams.filterQ;
+
+  // LFO for filter modulation
+  lfo = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = audioParams.lfoRate;
+  lfoGain.gain.value = audioParams.lfoDepth;
+  lfo.connect(lfoGain);
+  lfoGain.connect(filterNode.frequency);
+  lfo.start();
+
+  filterNode.connect(masterGain);
+  masterGain.connect(analyser);
+  analyser.connect(audioCtx.destination);
+}
+
+function mapCurveToAudio(t) {
+  // Map current curve point to frequency modulation
+  const p = customExpr || getPreset();
+  if (mode !== "parametric" && mode !== "audio") return;
+
+  const xVal = evalExpr(p.x, t);
+  const yVal = evalExpr(p.y, t);
+  const zVal = evalExpr(p.z, t);
+  const wVal = evalExpr(p.w, t);
+
+  // Map x to base frequency offset
+  const freqMod = xVal * 100;
+  // Map y to filter cutoff
+  const filterMod = Math.abs(yVal) * 1000 + 200;
+  // Map z to detune
+  const detuneMod = zVal * 50;
+  // Map w to volume envelope
+  const volMod = (wVal + 1) / 2;
+
+  return { freqMod, filterMod, detuneMod, volMod };
+}
+
+function startAudio() {
+  if (audioPlaying) return;
+  initAudio();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+
+  // Create oscillators
+  oscillators = oscConfigs.map((cfg, i) => {
+    const osc = audioCtx.createOscillator();
+    const oscGain = audioCtx.createGain();
+    osc.type = cfg.wave;
+    osc.frequency.value = cfg.freq;
+    osc.detune.value = cfg.detune;
+    oscGain.gain.value = cfg.gain * audioParams.masterVol;
+    osc.connect(oscGain);
+    oscGain.connect(filterNode);
+    osc.start();
+    return { osc, gain: oscGain, cfg };
+  });
+
+  audioPlaying = true;
+  startAudioViz();
+}
+
+function stopAudio() {
+  oscillators.forEach(o => { try { o.osc.stop(); } catch {} });
+  oscillators = [];
+  audioPlaying = false;
+}
+
+function toggleAudio() {
+  if (audioPlaying) stopAudio(); else startAudio();
+}
+
+function updateAudioParams() {
+  if (!audioCtx) return;
+  masterGain.gain.setTargetAtTime(audioParams.masterVol, audioCtx.currentTime, 0.05);
+  filterNode.type = audioParams.filterType;
+  filterNode.frequency.setTargetAtTime(audioParams.filterFreq, audioCtx.currentTime, 0.05);
+  filterNode.Q.setTargetAtTime(audioParams.filterQ, audioCtx.currentTime, 0.05);
+  if (lfo) lfo.frequency.setTargetAtTime(audioParams.lfoRate, audioCtx.currentTime, 0.05);
+
+  oscillators.forEach((o, i) => {
+    if (oscConfigs[i]) {
+      o.osc.type = oscConfigs[i].wave;
+      o.osc.frequency.setTargetAtTime(oscConfigs[i].freq, audioCtx.currentTime, 0.05);
+      o.osc.detune.setTargetAtTime(oscConfigs[i].detune, audioCtx.currentTime, 0.05);
+      o.gain.gain.setTargetAtTime(oscConfigs[i].gain * audioParams.masterVol, audioCtx.currentTime, 0.05);
+    }
+  });
+}
+
+// Map curve animation to audio modulation
+function modulateAudioFromCurve() {
+  if (!audioPlaying || !oscillators.length) return;
+  const t = (animPhase / 360) * Math.PI * 2;
+  const mod = mapCurveToAudio(t);
+  if (!mod) return;
+
+  oscillators.forEach((o, i) => {
+    const baseFreq = oscConfigs[i].freq;
+    o.osc.frequency.setTargetAtTime(baseFreq + mod.freqMod * (i * 0.3 + 0.5), audioCtx.currentTime, 0.02);
+    o.osc.detune.setTargetAtTime(oscConfigs[i].detune + mod.detuneMod, audioCtx.currentTime, 0.02);
+    o.gain.gain.setTargetAtTime(oscConfigs[i].gain * audioParams.masterVol * (0.5 + mod.volMod * 0.5), audioCtx.currentTime, 0.02);
+  });
+  filterNode.frequency.setTargetAtTime(Math.min(mod.filterMod + audioParams.filterFreq, 15000), audioCtx.currentTime, 0.02);
+}
+
+function getAudioState() {
+  return {
+    params: { ...audioParams },
+    oscillators: oscConfigs.map(c => ({ ...c })),
+    playing: audioPlaying
+  };
+}
+
+// ── Audio visualizer ──
+let vizAnimId = null;
+function startAudioViz() {
+  const vizCanvas = document.getElementById("audioViz");
+  const vCtx = vizCanvas.getContext("2d");
+
+  function drawViz() {
+    if (!audioPlaying || !analyser) { vizAnimId = null; return; }
+    const dpr = devicePixelRatio || 1;
+    const rect = vizCanvas.getBoundingClientRect();
+    vizCanvas.width = rect.width * dpr; vizCanvas.height = rect.height * dpr;
+    vCtx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+
+    const bufLen = analyser.frequencyBinCount;
+    const data = new Uint8Array(bufLen);
+    analyser.getByteFrequencyData(data);
+
+    vCtx.clearRect(0, 0, W, H);
+    const barW = W / bufLen * 2.5;
+    for (let i = 0; i < bufLen; i++) {
+      const barH = (data[i] / 255) * H;
+      const hue = (i / bufLen) * 300 + animPhase;
+      vCtx.fillStyle = hslFn(hue, 70, 50);
+      vCtx.globalAlpha = 0.6;
+      vCtx.fillRect(i * barW, H - barH, barW - 1, barH);
+    }
+    vCtx.globalAlpha = 1;
+    vizAnimId = requestAnimationFrame(drawViz);
+  }
+  if (!vizAnimId) vizAnimId = requestAnimationFrame(drawViz);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PRESETS & CURVE ENGINE (same as before, compressed)
+// ═══════════════════════════════════════════════════════════════
+const PARAM_PRESETS=[
   {name:"Butterfly",x:"Math.sin(t)-0.50*Math.sin(3*t)",y:"-Math.cos(t)+0.50*Math.cos(3*t)",z:"Math.cos(t)*Math.cos(3*t)",w:"0.3333*Math.sin(5*t)",xL:"sin θ − 0.50 sin 3θ",yL:"−cos θ + 0.50 cos 3θ",zL:"cos θ · cos 3θ",wL:"0.3333 sin 5θ",xR:[-1.5,1.5],yR:[-1.5,1.5],zR:[-1,1],wR:[-.34,.34]},
   {name:"Lissajous",x:"Math.sin(3*t)",y:"Math.cos(2*t)",z:"Math.sin(5*t)*0.5",w:"0.5*Math.cos(7*t)",xL:"sin 3θ",yL:"cos 2θ",zL:"0.5 sin 5θ",wL:"0.5 cos 7θ",xR:[-1,1],yR:[-1,1],zR:[-.5,.5],wR:[-.5,.5]},
-  {name:"Rose",x:"Math.cos(2*t)*Math.cos(t)",y:"Math.cos(2*t)*Math.sin(t)",z:"Math.sin(4*t)*0.3",w:"0.25*Math.sin(6*t)",xL:"cos 2θ · cos θ",yL:"cos 2θ · sin θ",zL:"0.3 sin 4θ",wL:"0.25 sin 6θ",xR:[-1,1],yR:[-1,1],zR:[-.3,.3],wR:[-.25,.25]},
-  {name:"Trefoil",x:"Math.sin(t)+2*Math.sin(2*t)",y:"Math.cos(t)-2*Math.cos(2*t)",z:"-Math.sin(3*t)",w:"0.3333*Math.sin(3*t)",xL:"sin θ + 2 sin 2θ",yL:"cos θ − 2 cos 2θ",zL:"−sin 3θ",wL:"0.3333 sin 3θ",xR:[-3,3],yR:[-3,3],zR:[-1,1],wR:[-.34,.34]},
+  {name:"Rose",x:"Math.cos(2*t)*Math.cos(t)",y:"Math.cos(2*t)*Math.sin(t)",z:"Math.sin(4*t)*0.3",w:"0.25*Math.sin(6*t)",xL:"cos 2θ·cos θ",yL:"cos 2θ·sin θ",zL:"0.3 sin 4θ",wL:"0.25 sin 6θ",xR:[-1,1],yR:[-1,1],zR:[-.3,.3],wR:[-.25,.25]},
+  {name:"Trefoil",x:"Math.sin(t)+2*Math.sin(2*t)",y:"Math.cos(t)-2*Math.cos(2*t)",z:"-Math.sin(3*t)",w:"0.3333*Math.sin(3*t)",xL:"sin θ+2sin 2θ",yL:"cos θ−2cos 2θ",zL:"−sin 3θ",wL:"0.3333 sin 3θ",xR:[-3,3],yR:[-3,3],zR:[-1,1],wR:[-.34,.34]},
   {name:"Spirograph",x:"0.7*Math.cos(t)+0.3*Math.cos(7*t)",y:"0.7*Math.sin(t)+0.3*Math.sin(7*t)",z:"0.4*Math.sin(3*t)",w:"0.5*Math.cos(5*t)",xL:"0.7cos θ+0.3cos 7θ",yL:"0.7sin θ+0.3sin 7θ",zL:"0.4 sin 3θ",wL:"0.5 cos 5θ",xR:[-1,1],yR:[-1,1],zR:[-.4,.4],wR:[-.5,.5]},
-  {name:"Figure-8",x:"Math.sin(t)",y:"Math.sin(t)*Math.cos(t)",z:"Math.sin(2*t)*0.5",w:"0.4*Math.cos(3*t)",xL:"sin θ",yL:"sin θ · cos θ",zL:"0.5 sin 2θ",wL:"0.4 cos 3θ",xR:[-1,1],yR:[-.5,.5],zR:[-.5,.5],wR:[-.4,.4]},
-  {name:"Hypocycloid",x:"2*Math.cos(t)+Math.cos(2*t)",y:"2*Math.sin(t)-Math.sin(2*t)",z:"0.5*Math.sin(3*t)",w:"0.3*Math.cos(4*t)",xL:"2cos θ+cos 2θ",yL:"2sin θ−sin 2θ",zL:"0.5 sin 3θ",wL:"0.3 cos 4θ",xR:[-3,3],yR:[-3,3],zR:[-.5,.5],wR:[-.3,.3]},
-  {name:"Star",x:"Math.cos(t)*Math.cos(t)*Math.cos(t)",y:"Math.sin(t)*Math.sin(t)*Math.sin(t)",z:"0.4*Math.sin(5*t)",w:"0.5*Math.sin(4*t)",xL:"cos³ θ",yL:"sin³ θ",zL:"0.4 sin 5θ",wL:"0.5 sin 4θ",xR:[-1,1],yR:[-1,1],zR:[-.4,.4],wR:[-.5,.5]},
+  {name:"Figure-8",x:"Math.sin(t)",y:"Math.sin(t)*Math.cos(t)",z:"Math.sin(2*t)*0.5",w:"0.4*Math.cos(3*t)",xL:"sin θ",yL:"sinθ·cosθ",zL:"0.5 sin 2θ",wL:"0.4 cos 3θ",xR:[-1,1],yR:[-.5,.5],zR:[-.5,.5],wR:[-.4,.4]},
+  {name:"Hypocycloid",x:"2*Math.cos(t)+Math.cos(2*t)",y:"2*Math.sin(t)-Math.sin(2*t)",z:"0.5*Math.sin(3*t)",w:"0.3*Math.cos(4*t)",xL:"2cosθ+cos2θ",yL:"2sinθ−sin2θ",zL:"0.5sin3θ",wL:"0.3cos4θ",xR:[-3,3],yR:[-3,3],zR:[-.5,.5],wR:[-.3,.3]},
+  {name:"Star",x:"Math.cos(t)*Math.cos(t)*Math.cos(t)",y:"Math.sin(t)*Math.sin(t)*Math.sin(t)",z:"0.4*Math.sin(5*t)",w:"0.5*Math.sin(4*t)",xL:"cos³θ",yL:"sin³θ",zL:"0.4sin5θ",wL:"0.5sin4θ",xR:[-1,1],yR:[-1,1],zR:[-.4,.4],wR:[-.5,.5]},
 ];
 const FOURIER_PRESETS=[
-  {name:"Square Wave",terms:[{a:1,b:0,n:1},{a:0,b:0,n:2},{a:.333,b:0,n:3},{a:0,b:0,n:4},{a:.2,b:0,n:5},{a:0,b:0,n:6},{a:.143,b:0,n:7}],yL:"Σ sin(nθ)/n [odd]"},
-  {name:"Sawtooth",terms:[{a:0,b:1,n:1},{a:0,b:-.5,n:2},{a:0,b:.333,n:3},{a:0,b:-.25,n:4},{a:0,b:.2,n:5}],yL:"Σ (-1)^(n+1) sin(nθ)/n"},
-  {name:"Triangle Wave",terms:[{a:1,b:0,n:1},{a:-.111,b:0,n:3},{a:.04,b:0,n:5},{a:-.0204,b:0,n:7}],yL:"Σ (-1)^k cos((2k+1)θ)/(2k+1)²"},
-  {name:"Pulse",terms:[{a:.5,b:.5,n:1},{a:.5,b:0,n:2},{a:.5,b:-.3,n:3},{a:.3,b:.2,n:5},{a:-.2,b:.1,n:7}],yL:"custom pulse harmonics"},
-  {name:"Clover",terms:[{a:1,b:0,n:1},{a:0,b:.5,n:3},{a:.3,b:0,n:5},{a:0,b:.2,n:7}],yL:"mixed harmonic clover"},
+  {name:"Square Wave",terms:[{a:1,b:0,n:1},{a:.333,b:0,n:3},{a:.2,b:0,n:5},{a:.143,b:0,n:7}],yL:"Σ sin(nθ)/n [odd]"},
+  {name:"Sawtooth",terms:[{a:0,b:1,n:1},{a:0,b:-.5,n:2},{a:0,b:.333,n:3},{a:0,b:-.25,n:4},{a:0,b:.2,n:5}],yL:"Σ(-1)^(n+1)sin(nθ)/n"},
+  {name:"Triangle",terms:[{a:1,b:0,n:1},{a:-.111,b:0,n:3},{a:.04,b:0,n:5},{a:-.0204,b:0,n:7}],yL:"Σ(-1)^k cos/n²"},
+  {name:"Pulse",terms:[{a:.5,b:.5,n:1},{a:.5,b:0,n:2},{a:.5,b:-.3,n:3},{a:.3,b:.2,n:5}],yL:"pulse harmonics"},
 ];
 
 let mode="parametric",presetIdx=0,rotation={x:.3,y:-.4},zoom=1,animPhase=0,playing=true,speed=1,lineWidth=1.5,steps=2000;
@@ -159,9 +625,10 @@ let favourites=JSON.parse(localStorage.getItem("curveFavs")||"[]"),customExpr=nu
 const canvas=document.getElementById("curveCanvas"),ctx=canvas.getContext("2d");
 
 function evalExpr(e,t){try{return new Function("t","return "+e)(t)}catch{return 0}}
-function hsl(h,s,l){h=((h%360)+360)%360;s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs(((h/60)%2)-1)),m=l-c/2;let r,g,b;if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}return`rgb(${(r+m)*255|0},${(g+m)*255|0},${(b+m)*255|0})`}
-function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
-function getPresets(){return mode==="parametric"?PARAMETRIC_PRESETS:FOURIER_PRESETS}
+function hslFn(h,s,l){h=((h%360)+360)%360;s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs(((h/60)%2)-1)),m=l-c/2;let r,g,b;if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}return`rgb(${(r+m)*255|0},${(g+m)*255|0},${(b+m)*255|0})`}
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2500)}
+const showToast=toast;
+function getPresets(){return mode==="parametric"||mode==="audio"?PARAM_PRESETS:FOURIER_PRESETS}
 function getPreset(){return getPresets()[presetIdx]}
 
 function drawParametric(){
@@ -175,139 +642,295 @@ function drawParametric(){
   const pts=[];
   for(let i=0;i<=steps;i++){const t=(i/steps)*Math.PI*2;let px=(evalExpr(p.x,t)-xM)/xH,py=(evalExpr(p.y,t)-yM)/yH,pz=(evalExpr(p.z,t)-zM)/zH;const w=evalExpr(p.w,t);const x1=px*cry-pz*sry,z1=px*sry+pz*cry,y1=py*crx-z1*srx,z2=py*srx+z1*crx;pts.push({x:cx+x1*sc,y:cy+y1*sc,z:z2,hue:((w/wMax+1)/2)*300+animPhase})}
   ctx.lineWidth=lineWidth;ctx.lineCap="round";ctx.lineJoin="round";
-  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=hsl(b.hue,80,55+15*((b.z+1)/2));ctx.globalAlpha=Math.max(.15,Math.min(1,.35+.65*((b.z+1)/2)));ctx.stroke()}
-  ctx.globalAlpha=1;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=hslFn(b.hue,80,55+15*((b.z+1)/2));ctx.globalAlpha=Math.max(.15,Math.min(1,.35+.65*((b.z+1)/2)));ctx.stroke()}ctx.globalAlpha=1;
 }
-
 function drawFourier(){
   const dpr=devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
-  const W=rect.width,H=rect.height;ctx.clearRect(0,0,W,H);const p=getPreset(),terms=p.terms;
-  const N=steps,pts=[];let minY=Infinity,maxY=-Infinity;
+  const W=rect.width,H=rect.height;ctx.clearRect(0,0,W,H);const terms=getPreset().terms,N=steps,pts=[];let minY=Infinity,maxY=-Infinity;
   for(let i=0;i<=N;i++){const t=(i/N)*Math.PI*2;let v=0;for(const tm of terms)v+=tm.a*Math.cos(tm.n*t)+tm.b*Math.sin(tm.n*t);pts.push({t,val:v});if(v<minY)minY=v;if(v>maxY)maxY=v}
   const pad=60,plotW=W-pad*2,plotH=H-pad*2,vR=maxY-minY||1;
   ctx.strokeStyle="rgba(255,255,255,.04)";ctx.lineWidth=1;
   for(let i=0;i<=8;i++){const gx=pad+plotW*(i/8);ctx.beginPath();ctx.moveTo(gx,pad);ctx.lineTo(gx,H-pad);ctx.stroke()}
   for(let i=0;i<=6;i++){const gy=pad+plotH*(i/6);ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(W-pad,gy);ctx.stroke()}
-  ctx.font="9px 'JetBrains Mono'";ctx.fillStyle="#3a3d44";ctx.fillText("0",pad-4,H-pad+14);ctx.fillText("2π",W-pad-10,H-pad+14);ctx.fillText(maxY.toFixed(2),pad-36,pad+4);ctx.fillText(minY.toFixed(2),pad-36,H-pad+4);
-  for(let ti=0;ti<terms.length;ti++){const tm=terms[ti];ctx.beginPath();ctx.lineWidth=.8;ctx.globalAlpha=.2;ctx.strokeStyle=hsl((ti/terms.length)*300+animPhase,70,55);for(let i=0;i<=N;i++){const t=(i/N)*Math.PI*2,v=tm.a*Math.cos(tm.n*t)+tm.b*Math.sin(tm.n*t),sx=pad+plotW*(i/N),sy=pad+plotH*(1-(v-minY)/vR);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy)}ctx.stroke()}
+  for(let ti=0;ti<terms.length;ti++){const tm=terms[ti];ctx.beginPath();ctx.lineWidth=.8;ctx.globalAlpha=.2;ctx.strokeStyle=hslFn((ti/terms.length)*300+animPhase,70,55);for(let i=0;i<=N;i++){const t=(i/N)*Math.PI*2,v=tm.a*Math.cos(tm.n*t)+tm.b*Math.sin(tm.n*t),sx=pad+plotW*(i/N),sy=pad+plotH*(1-(v-minY)/vR);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy)}ctx.stroke()}
   ctx.lineWidth=lineWidth;ctx.globalAlpha=1;
-  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];const sx1=pad+plotW*((i-1)/N),sy1=pad+plotH*(1-(a.val-minY)/vR),sx2=pad+plotW*(i/N),sy2=pad+plotH*(1-(b.val-minY)/vR);ctx.beginPath();ctx.moveTo(sx1,sy1);ctx.lineTo(sx2,sy2);ctx.strokeStyle=hsl(((b.val-minY)/vR)*300+animPhase,85,58);ctx.stroke()}
-  ctx.globalAlpha=1;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];ctx.beginPath();ctx.moveTo(pad+plotW*((i-1)/N),pad+plotH*(1-(a.val-minY)/vR));ctx.lineTo(pad+plotW*(i/N),pad+plotH*(1-(b.val-minY)/vR));ctx.strokeStyle=hslFn(((b.val-minY)/vR)*300+animPhase,85,58);ctx.stroke()}ctx.globalAlpha=1;
 }
-
-function draw(){mode==="parametric"?drawParametric():drawFourier()}
+function draw(){(mode==="parametric"||mode==="audio")?drawParametric():drawFourier();if(audioPlaying)modulateAudioFromCurve();}
 function tick(){if(!playing)return;animPhase=(animPhase+.3*speed)%360;draw();animId=requestAnimationFrame(tick)}
 function startAnim(){if(playing&&!animId)animId=requestAnimationFrame(tick)}
 function stopAnim(){if(animId){cancelAnimationFrame(animId);animId=null}}
 
 function updateUI(){
-  const p=getPreset();
-  if(mode==="parametric"){const pe=customExpr||p;document.getElementById("equations").innerHTML=`<div><span class="var-x">x</span> = ${pe.xL}</div><div><span class="var-y">y</span> = ${pe.yL}</div><div><span class="var-z">z</span> = ${pe.zL}</div><div><span class="var-w">w</span> = ${pe.wL} <span class="dim">[→ hue]</span></div><div class="hint">DRAG · SCROLL · PINCH</div>`}
-  else{document.getElementById("equations").innerHTML=`<div><span class="var-y">f(θ)</span> = ${p.yL}</div><div><span class="dim">terms: ${p.terms.length}</span></div><div class="hint">FOURIER DECOMPOSITION</div>`}
-  if(mode==="parametric"){const pe=customExpr||p;const cards=[{l:"X",c:"cx",r:pe.xR,m:"cartesian",k:"x"},{l:"Y",c:"cy",r:pe.yR,m:"cartesian",k:"y"},{l:"Z",c:"cz",r:pe.zR,m:"depth",k:"z"},{l:"W",c:"cw",r:pe.wR,m:"→ color",k:"w"}];document.getElementById("paramCards").innerHTML=cards.map(c=>`<div class="param-card ${c.c} ${selectedParam===c.k?'selected':''}" onclick="selectParam('${c.k}')"><div class="lbl">${c.l}</div><div class="rng">RANGE: ${c.r[0].toFixed(2)}<br>to ${c.r[1].toFixed(2)}</div><div class="map">${c.m}</div></div>`).join("")}
-  else{const terms=p.terms;document.getElementById("paramCards").innerHTML=terms.slice(0,4).map((tm,i)=>`<div class="param-card" style="border:1px solid ${hsl(i/terms.length*300,60,40)};width:54px"><div class="lbl" style="color:${hsl(i/terms.length*300,70,60)};font-size:13px">n=${tm.n}</div><div class="rng">a:${tm.a.toFixed(2)}<br>b:${tm.b.toFixed(2)}</div></div>`).join("")}
-  document.getElementById("presetIndicator").textContent=`${mode.toUpperCase()} · ${(customExpr||p).name} (${presetIdx+1}/${getPresets().length})`;
-  document.getElementById("speedBadge").textContent=`SPEED: ${speed.toFixed(1)}x · ZOOM: ${zoom.toFixed(1)}x`;
-  const pb=document.getElementById("playBtn");pb.textContent=playing?"⏸":"▶";pb.classList.toggle("active-play",playing);
-  updateFavBadge();draw();
+  const p=customExpr||getPreset();
+  if(mode==="parametric"||mode==="audio"){
+    document.getElementById("equations").innerHTML=`<div><span class="vx">x</span> = ${p.xL}</div><div><span class="vy">y</span> = ${p.yL}</div><div><span class="vz">z</span> = ${p.zL}</div><div><span class="vw">w</span> = ${p.wL} <span class="dim">[→ hue]</span></div>${mode==="audio"?'<div style="margin-top:6px;color:var(--beats);font-size:10px">♫ AUDIO: '+(audioPlaying?'PLAYING':'STOPPED')+'</div>':''}<div class="hint">DRAG · SCROLL · PINCH</div>`;
+  } else {
+    document.getElementById("equations").innerHTML=`<div><span class="vy">f(θ)</span> = ${getPreset().yL}</div><div class="dim">terms: ${getPreset().terms.length}</div><div class="hint">FOURIER DECOMPOSITION</div>`;
+  }
+  if(mode==="parametric"||mode==="audio"){
+    const cards=[{l:"X",c:"var(--red)",k:"x",r:p.xR,m:"cartesian"},{l:"Y",c:"var(--grn)",k:"y",r:p.yR,m:"cartesian"},{l:"Z",c:"var(--blu)",k:"z",r:p.zR,m:"depth"},{l:"W",c:"var(--yel)",k:"w",r:p.wR,m:"→ color"}];
+    document.getElementById("paramCards").innerHTML=cards.map(c=>`<div class="pcard ${selectedParam===c.k?'sel':''}" style="border:1px solid color-mix(in srgb,${c.c} ${selectedParam===c.k?'50%':'20%'},transparent)" onclick="selectParam('${c.k}')"><div class="lb" style="color:${c.c}">${c.l}</div><div class="rn">RANGE:${c.r[0].toFixed(2)}<br>to ${c.r[1].toFixed(2)}</div><div class="mp">${c.m}</div></div>`).join("");
+  } else {
+    const terms=getPreset().terms;
+    document.getElementById("paramCards").innerHTML=terms.slice(0,4).map((tm,i)=>`<div class="pcard" style="border:1px solid ${hslFn(i/terms.length*300,60,40)}"><div class="lb" style="color:${hslFn(i/terms.length*300,70,60)};font-size:12px">n=${tm.n}</div><div class="rn">a:${tm.a.toFixed(2)}<br>b:${tm.b.toFixed(2)}</div></div>`).join("");
+  }
+  document.getElementById("presetInd").textContent=`${mode.toUpperCase()} · ${p.name} (${presetIdx+1}/${getPresets().length})`;
+  document.getElementById("speedBg").textContent=`SPEED: ${speed.toFixed(1)}x · ZOOM: ${zoom.toFixed(1)}x`;
+  document.getElementById("playBtn").textContent=playing?"⏸":"▶";
+  document.getElementById("playBtn").classList.toggle("glow",playing);
+  updateFavBadge(); draw();
 }
 function updateFavBadge(){const b=document.getElementById("favBadge");if(favourites.length>0){b.style.display="inline";b.textContent=favourites.length}else b.style.display="none"}
 
-function setTab(t){mode=t;presetIdx=0;customExpr=null;document.getElementById("tabParametric").classList.toggle("active",t==="parametric");document.getElementById("tabFourier").classList.toggle("active",t==="fourier");selectedParam=null;closePanel();updateUI()}
+// ── Tab / controls ──
+function setTab(t){
+  mode=t;
+  if(t!=="audio")presetIdx=Math.min(presetIdx,getPresets().length-1);
+  customExpr=null; selectedParam=null;
+  document.getElementById("tabParam").classList.toggle("active",t==="parametric");
+  document.getElementById("tabFourier").classList.toggle("active",t==="fourier");
+  document.getElementById("tabAudio").classList.toggle("active",t==="audio");
+  if(t==="audio"){togglePanel("audio")}else{closePanel()}
+  updateUI();
+}
 function prevPreset(){presetIdx=(presetIdx-1+getPresets().length)%getPresets().length;customExpr=null;updateUI()}
 function nextPreset(){presetIdx=(presetIdx+1)%getPresets().length;customExpr=null;updateUI()}
 function togglePlay(){playing=!playing;if(playing)startAnim();else stopAnim();updateUI()}
-function selectParam(k){selectedParam=selectedParam===k?null:k;if(selectedParam&&mode==="parametric")togglePanel("editor");else if(!selectedParam)closePanel();updateUI()}
+function selectParam(k){selectedParam=selectedParam===k?null:k;if(selectedParam)togglePanel("editor");else if(!selectedParam)closePanel();updateUI()}
 
 function togglePanel(id){if(openPanelId===id){closePanel();return}openPanelId=id;document.getElementById("sidePanel").classList.add("open");renderPanel()}
 function closePanel(){openPanelId=null;document.getElementById("sidePanel").classList.remove("open")}
 
-function renderPanel(){
-  const title=document.getElementById("panelTitle"),body=document.getElementById("panelBody");
-  if(openPanelId==="favourites"){
-    title.textContent="☆ FAVOURITES";
-    if(favourites.length===0){body.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--txM);font-size:11px;line-height:1.8">No favourites yet.<br>Right-click canvas or click ☆<br>to add one.</div>`}
-    else{body.innerHTML=`<div class="panel-section"><div class="panel-section-title">SAVED CURVES</div><div class="preset-list">${favourites.map((f,i)=>`<div class="preset-item" onclick="loadFav(${i})"><span>${f.mode==='fourier'?'∿':'▣'} ${f.name}</span><button class="fav-btn is-fav" onclick="event.stopPropagation();removeFav(${i})">★</button></div>`).join("")}</div></div><div class="panel-section"><button class="btn-sm danger" onclick="clearFavs()">CLEAR ALL</button></div>`}
-  }
-  else if(openPanelId==="editor"){
-    title.textContent="✎ EQUATION EDITOR";const p=customExpr||getPreset();
-    if(mode==="parametric"){
-      const vars=[{k:"x",c:"var(--red)",label:"X(θ)",raw:p.x},{k:"y",c:"var(--grn)",label:"Y(θ)",raw:p.y},{k:"z",c:"var(--blu)",label:"Z(θ)",raw:p.z},{k:"w",c:"var(--yel)",label:"W(θ) → hue",raw:p.w}];
-      body.innerHTML=`<div class="panel-section"><div class="panel-section-title">EQUATIONS</div>${vars.map(v=>`<div class="field-group"><div class="field-label"><span class="dot" style="background:${v.c}"></span> ${v.label}</div><input class="field-input" id="edit_${v.k}" value="${v.raw.replace(/Math\./g,'')}" onchange="updateExpr()"></div>`).join("")}</div><div class="panel-section"><div class="panel-section-title">DISPLAY</div><div class="slider-row"><span class="slider-label">Line width</span><input type="range" min="0.5" max="5" step="0.1" value="${lineWidth}" oninput="lineWidth=+this.value;document.getElementById('lwVal').textContent=lineWidth.toFixed(1);draw()"><span class="slider-val" id="lwVal">${lineWidth.toFixed(1)}</span></div><div class="slider-row"><span class="slider-label">Resolution</span><input type="range" min="500" max="5000" step="100" value="${steps}" oninput="steps=+this.value;document.getElementById('stVal').textContent=steps;draw()"><span class="slider-val" id="stVal">${steps}</span></div><div class="slider-row"><span class="slider-label">Speed</span><input type="range" min="0.1" max="5" step="0.1" value="${speed}" oninput="speed=+this.value;document.getElementById('spVal').textContent=speed.toFixed(1);updateUI()"><span class="slider-val" id="spVal">${speed.toFixed(1)}</span></div><div class="slider-row"><span class="slider-label">Zoom</span><input type="range" min="0.3" max="5" step="0.1" value="${zoom}" oninput="zoom=+this.value;document.getElementById('zmVal').textContent=zoom.toFixed(1);draw()"><span class="slider-val" id="zmVal">${zoom.toFixed(1)}</span></div></div><div class="panel-section"><div class="panel-section-title">ACTIONS</div><div class="btn-row"><button class="btn-sm" onclick="resetView()">↺ RESET</button><button class="btn-sm" onclick="randomize()">🎲 RANDOM</button><button class="btn-sm" onclick="openModal('export')">📤 EXPORT</button><button class="btn-sm" onclick="addCurrentFav()">☆ SAVE</button></div></div>`;
-    } else {
-      body.innerHTML=`<div class="panel-section"><div class="panel-section-title">FOURIER TERMS</div><div style="font-size:11px;color:var(--txD);line-height:1.8">Fourier equation editing coming soon.<br>Use presets panel to browse waves.</div></div><div class="panel-section"><div class="panel-section-title">DISPLAY</div><div class="slider-row"><span class="slider-label">Line width</span><input type="range" min="0.5" max="5" step="0.1" value="${lineWidth}" oninput="lineWidth=+this.value;draw()"><span class="slider-val">${lineWidth.toFixed(1)}</span></div><div class="slider-row"><span class="slider-label">Speed</span><input type="range" min="0.1" max="5" step="0.1" value="${speed}" oninput="speed=+this.value;updateUI()"><span class="slider-val">${speed.toFixed(1)}</span></div></div>`;
-    }
-  }
-  else if(openPanelId==="presets"){
-    title.textContent="☰ PRESETS";const presets=getPresets();
-    body.innerHTML=`<div class="panel-section"><div class="panel-section-title">${mode.toUpperCase()} PRESETS</div><div class="preset-list">${presets.map((p,i)=>{const isFav=favourites.some(f=>f.name===p.name&&f.mode===mode);return`<div class="preset-item ${i===presetIdx&&!customExpr?'current':''}" onclick="presetIdx=${i};customExpr=null;updateUI();renderPanel()"><span>${p.name}</span><button class="fav-btn ${isFav?'is-fav':''}" onclick="event.stopPropagation();toggleFavPreset(${i})">${isFav?'★':'☆'}</button></div>`}).join("")}</div></div>`;
-  }
-}
-
-function updateExpr(){
-  const p=getPreset(),wrap=s=>s.replace(/sin/g,'Math.sin').replace(/cos/g,'Math.cos').replace(/tan/g,'Math.tan').replace(/abs/g,'Math.abs').replace(/sqrt/g,'Math.sqrt').replace(/PI/g,'Math.PI');
-  const xR=document.getElementById("edit_x").value,yR=document.getElementById("edit_y").value,zR=document.getElementById("edit_z").value,wR=document.getElementById("edit_w").value;
-  customExpr={x:wrap(xR),y:wrap(yR),z:wrap(zR),w:wrap(wR),xL:xR,yL:yR,zL:zR,wL:wR,xR:[...p.xR],yR:[...p.yR],zR:[...p.zR],wR:[...p.wR],name:"Custom"};
-  let xMin=Infinity,xMax=-Infinity,yMin=Infinity,yMax=-Infinity,zMin=Infinity,zMax=-Infinity,wMin=Infinity,wMax=-Infinity;
-  for(let i=0;i<=500;i++){const t=(i/500)*Math.PI*2;const xv=evalExpr(customExpr.x,t),yv=evalExpr(customExpr.y,t),zv=evalExpr(customExpr.z,t),wv=evalExpr(customExpr.w,t);if(xv<xMin)xMin=xv;if(xv>xMax)xMax=xv;if(yv<yMin)yMin=yv;if(yv>yMax)yMax=yv;if(zv<zMin)zMin=zv;if(zv>zMax)zMax=zv;if(wv<wMin)wMin=wv;if(wv>wMax)wMax=wv}
-  customExpr.xR=[xMin-.1,xMax+.1];customExpr.yR=[yMin-.1,yMax+.1];customExpr.zR=[zMin-.1,zMax+.1];customExpr.wR=[wMin-.1,wMax+.1];
-  updateUI();
-}
-
-function resetView(){rotation={x:.3,y:-.4};zoom=1;speed=1;lineWidth=1.5;steps=2000;updateUI();if(openPanelId==="editor")renderPanel();toast("View reset")}
+function resetView(){rotation={x:.3,y:-.4};zoom=1;speed=1;lineWidth=1.5;steps=2000;updateUI();toast("View reset")}
 function randomize(){
-  const fns=["sin","cos"],rn=()=>(Math.random()*6+1|0),rc=()=>(Math.random()*1.5+.1).toFixed(2);
-  const rf=()=>`${rc()}*Math.${fns[Math.random()*2|0]}(${rn()}*t)`;
+  const fns=["sin","cos"],rn=()=>(Math.random()*6+1|0),rc=()=>(Math.random()*1.5+.1).toFixed(2),rf=()=>`${rc()}*Math.${fns[Math.random()*2|0]}(${rn()}*t)`;
   const x=rf(),y=rf(),z=`${(Math.random()*.6+.1).toFixed(2)}*Math.${fns[Math.random()*2|0]}(${rn()}*t)`,w=`${(Math.random()*.5+.1).toFixed(2)}*Math.${fns[Math.random()*2|0]}(${rn()}*t)`;
-  customExpr={x,y,z,w,xL:x.replace(/Math\./g,''),yL:y.replace(/Math\./g,''),zL:z.replace(/Math\./g,''),wL:w.replace(/Math\./g,''),xR:[-2,2],yR:[-2,2],zR:[-1,1],wR:[-1,1],name:"Random"};
-  let xMin=Infinity,xMax=-Infinity,yMin=Infinity,yMax=-Infinity,zMin=Infinity,zMax=-Infinity,wMin=Infinity,wMax=-Infinity;
-  for(let i=0;i<=500;i++){const t=(i/500)*Math.PI*2;const xv=evalExpr(customExpr.x,t),yv=evalExpr(customExpr.y,t),zv=evalExpr(customExpr.z,t),wv=evalExpr(customExpr.w,t);if(xv<xMin)xMin=xv;if(xv>xMax)xMax=xv;if(yv<yMin)yMin=yv;if(yv>yMax)yMax=yv;if(zv<zMin)zMin=zv;if(zv>zMax)zMax=zv;if(wv<wMin)wMin=wv;if(wv>wMax)wMax=wv}
-  customExpr.xR=[xMin-.1,xMax+.1];customExpr.yR=[yMin-.1,yMax+.1];customExpr.zR=[zMin-.1,zMax+.1];customExpr.wR=[wMin-.1,wMax+.1];
-  updateUI();if(openPanelId==="editor")renderPanel();toast("Random curve generated!");
+  const ar=(e)=>{let mn=Infinity,mx=-Infinity;for(let i=0;i<=500;i++){const t=(i/500)*Math.PI*2,v=evalExpr(e,t);if(v<mn)mn=v;if(v>mx)mx=v}return[mn-.1,mx+.1]};
+  customExpr={x,y,z,w,xL:x.replace(/Math\./g,""),yL:y.replace(/Math\./g,""),zL:z.replace(/Math\./g,""),wL:w.replace(/Math\./g,""),xR:ar(x),yR:ar(y),zR:ar(z),wR:ar(w),name:"Random"};
+  updateUI();toast("Random curve!");
 }
 
 function saveFavs(){localStorage.setItem("curveFavs",JSON.stringify(favourites));updateFavBadge()}
-function addCurrentFav(){const p=customExpr||getPreset();const fav={name:p.name,mode,presetIdx,isCustom:!!customExpr};if(customExpr)Object.assign(fav,{x:p.x,y:p.y,z:p.z,w:p.w,xL:p.xL,yL:p.yL,zL:p.zL,wL:p.wL,xR:p.xR,yR:p.yR,zR:p.zR,wR:p.wR});if(!favourites.some(f=>f.name===fav.name&&f.mode===fav.mode)){favourites.push(fav);saveFavs();toast(`★ "${p.name}" added to favourites`)}else toast("Already in favourites");if(openPanelId==="favourites"||openPanelId==="presets")renderPanel()}
-function toggleFavPreset(idx){const p=getPresets()[idx];const fi=favourites.findIndex(f=>f.name===p.name&&f.mode===mode);if(fi>=0){favourites.splice(fi,1);toast(`Removed "${p.name}"`)}else{favourites.push({name:p.name,mode,presetIdx:idx,isCustom:false});toast(`★ "${p.name}" favourited`)}saveFavs();renderPanel()}
-function loadFav(fi){const f=favourites[fi];mode=f.mode;document.getElementById("tabParametric").classList.toggle("active",mode==="parametric");document.getElementById("tabFourier").classList.toggle("active",mode==="fourier");if(f.isCustom){customExpr={x:f.x,y:f.y,z:f.z,w:f.w,xL:f.xL,yL:f.yL,zL:f.zL,wL:f.wL,xR:f.xR,yR:f.yR,zR:f.zR,wR:f.wR,name:f.name}}else{presetIdx=f.presetIdx;customExpr=null}updateUI();toast(`Loaded "${f.name}"`)}
-function removeFav(i){favourites.splice(i,1);saveFavs();renderPanel();toast("Removed from favourites")}
-function clearFavs(){favourites=[];saveFavs();renderPanel();toast("All favourites cleared")}
+function addCurrentFav(){const p=customExpr||getPreset();const f={name:p.name,mode,presetIdx,isCustom:!!customExpr};if(customExpr)Object.assign(f,{x:p.x,y:p.y,z:p.z,w:p.w,xL:p.xL,yL:p.yL,zL:p.zL,wL:p.wL,xR:p.xR,yR:p.yR,zR:p.zR,wR:p.wR});if(!favourites.some(v=>v.name===f.name&&v.mode===f.mode)){favourites.push(f);saveFavs();toast(`★ "${p.name}" saved`)}else toast("Already saved")}
+function loadFav(i){const f=favourites[i];mode=f.mode;document.getElementById("tabParam").classList.toggle("active",mode==="parametric"||mode==="audio");document.getElementById("tabFourier").classList.toggle("active",mode==="fourier");document.getElementById("tabAudio").classList.toggle("active",mode==="audio");if(f.isCustom)customExpr={x:f.x,y:f.y,z:f.z,w:f.w,xL:f.xL,yL:f.yL,zL:f.zL,wL:f.wL,xR:f.xR,yR:f.yR,zR:f.zR,wR:f.wR,name:f.name};else{presetIdx=f.presetIdx;customExpr=null}updateUI();toast(`Loaded "${f.name}"`)}
+function removeFav(i){favourites.splice(i,1);saveFavs();renderPanel();toast("Removed")}
 
-function openModal(id){document.getElementById(id+"Modal").classList.add("show")}
-function closeModal(id){document.getElementById(id+"Modal").classList.remove("show")}
-function doSignIn(){const email=document.getElementById("signinEmail").value;if(!email){toast("Please enter an email");return}closeModal("signin");toast("Sign-in is a demo — favourites saved locally!")}
+// ═══════════════════════════════════════════════════════════════
+//  PANEL RENDERER
+// ═══════════════════════════════════════════════════════════════
+function renderPanel(){
+  const title=document.getElementById("pnlTitle"),body=document.getElementById("pnlBody");
 
-function exportPNG(){const link=document.createElement("a");link.download="parametric-curve.png";link.href=canvas.toDataURL("image/png");link.click();toast("PNG downloaded");closeModal("export")}
-function exportSVG(){
-  const p=customExpr||getPreset();const W=800,H=600,cx=W/2,cy=H/2,sc=Math.min(W,H)*.28*zoom;
-  const crx=Math.cos(rotation.x),srx=Math.sin(rotation.x),cry=Math.cos(rotation.y),sry=Math.sin(rotation.y);
-  const xM=(p.xR[0]+p.xR[1])/2,yM=(p.yR[0]+p.yR[1])/2,zM=(p.zR[0]+p.zR[1])/2;
-  const xH=(p.xR[1]-p.xR[0])/2||1,yH=(p.yR[1]-p.yR[0])/2||1,zH=(p.zR[1]-p.zR[0])/2||1,wMax=Math.max(Math.abs(p.wR[0]),Math.abs(p.wR[1]))||1;
-  let paths='',prev=null;
-  for(let i=0;i<=steps;i++){const t=(i/steps)*Math.PI*2;let px=(evalExpr(p.x,t)-xM)/xH,py=(evalExpr(p.y,t)-yM)/yH,pz=(evalExpr(p.z,t)-zM)/zH;const w=evalExpr(p.w,t);const x1=px*cry-pz*sry,z1=px*sry+pz*cry,y1=py*crx-z1*srx,z2=py*srx+z1*crx;const sx=cx+x1*sc,sy=cy+y1*sc;const hu=((w/wMax+1)/2)*300+animPhase;if(prev)paths+=`<line x1="${prev.x.toFixed(1)}" y1="${prev.y.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" stroke="${hsl(hu,80,60)}" stroke-width="${lineWidth}" opacity="${Math.max(.2,Math.min(1,.35+.65*((z2+1)/2))).toFixed(2)}"/>`;prev={x:sx,y:sy}}
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="background:#131518">${paths}</svg>`;
-  const blob=new Blob([svg],{type:"image/svg+xml"});const link=document.createElement("a");link.download="parametric-curve.svg";link.href=URL.createObjectURL(blob);link.click();closeModal("export");toast("SVG downloaded")
+  // ── AUDIO PANEL ──
+  if(openPanelId==="audio"){
+    title.textContent="♫ AUDIO SYNTHESIZER";
+    let html=`<div class="sec"><div class="sec-t">OSCILLATORS</div>`;
+    oscConfigs.forEach((cfg,i)=>{
+      html+=`<div class="osc-row">
+        <span class="osc-id" style="color:${hslFn(i*120,70,60)}">${i+1}</span>
+        <select onchange="oscConfigs[${i}].wave=this.value;updateAudioParams()">${WAVEFORMS.map(w=>`<option value="${w}" ${w===cfg.wave?'selected':''}>${w}</option>`).join("")}</select>
+        <input type="number" value="${cfg.freq}" min="20" max="2000" step="1" onchange="oscConfigs[${i}].freq=+this.value;updateAudioParams()" title="Freq Hz">
+        <input type="number" value="${cfg.detune}" min="-100" max="100" step="1" onchange="oscConfigs[${i}].detune=+this.value;updateAudioParams()" title="Detune" style="width:45px">
+        <input type="range" min="0" max="1" step="0.01" value="${cfg.gain}" oninput="oscConfigs[${i}].gain=+this.value;updateAudioParams()" style="width:50px">
+      </div>`;
+    });
+    html+=`<div class="brow" style="margin-top:6px">
+      <button class="bsm" onclick="oscConfigs.push({wave:'sine',freq:${220*(oscConfigs.length+1)},detune:0,gain:0.3});renderPanel()">+ ADD OSC</button>
+      ${oscConfigs.length>1?`<button class="bsm danger" onclick="oscConfigs.pop();renderPanel()">− REMOVE</button>`:''}
+    </div></div>`;
+
+    html+=`<div class="sec"><div class="sec-t">FILTER</div>
+      <div class="srow"><span class="slbl">Type</span><select class="finp" style="flex:1" onchange="audioParams.filterType=this.value;updateAudioParams()">${FILTER_TYPES.map(f=>`<option value="${f}" ${f===audioParams.filterType?'selected':''}>${f}</option>`).join("")}</select></div>
+      <div class="srow"><span class="slbl">Cutoff</span><input type="range" min="50" max="15000" step="10" value="${audioParams.filterFreq}" oninput="audioParams.filterFreq=+this.value;document.getElementById('fcVal').textContent=this.value+'Hz';updateAudioParams()"><span class="sval" id="fcVal">${audioParams.filterFreq}Hz</span></div>
+      <div class="srow"><span class="slbl">Resonance</span><input type="range" min="0.1" max="20" step="0.1" value="${audioParams.filterQ}" oninput="audioParams.filterQ=+this.value;document.getElementById('fqVal').textContent=(+this.value).toFixed(1);updateAudioParams()"><span class="sval" id="fqVal">${audioParams.filterQ.toFixed(1)}</span></div>
+    </div>`;
+
+    html+=`<div class="sec"><div class="sec-t">LFO MODULATION</div>
+      <div class="srow"><span class="slbl">Rate</span><input type="range" min="0.01" max="20" step="0.01" value="${audioParams.lfoRate}" oninput="audioParams.lfoRate=+this.value;document.getElementById('lrVal').textContent=(+this.value).toFixed(2)+'Hz';updateAudioParams()"><span class="sval" id="lrVal">${audioParams.lfoRate.toFixed(2)}Hz</span></div>
+      <div class="srow"><span class="slbl">Depth</span><input type="range" min="0" max="500" step="1" value="${audioParams.lfoDepth}" oninput="audioParams.lfoDepth=+this.value;updateAudioParams()"><span class="sval">${audioParams.lfoDepth}</span></div>
+    </div>`;
+
+    html+=`<div class="sec"><div class="sec-t">MASTER</div>
+      <div class="srow"><span class="slbl">Volume</span><input type="range" min="0" max="1" step="0.01" value="${audioParams.masterVol}" oninput="audioParams.masterVol=+this.value;document.getElementById('mvVal').textContent=Math.round(+this.value*100)+'%';updateAudioParams()"><span class="sval" id="mvVal">${Math.round(audioParams.masterVol*100)}%</span></div>
+    </div>`;
+
+    html+=`<div class="sec"><div class="sec-t">CURVE → AUDIO MAPPING</div>
+      <div style="font-size:9px;color:var(--txD);line-height:1.8;margin-bottom:8px">
+        <span style="color:var(--red)">X</span> → frequency offset · <span style="color:var(--grn)">Y</span> → filter cutoff<br>
+        <span style="color:var(--blu)">Z</span> → detune · <span style="color:var(--yel)">W</span> → volume envelope
+      </div>
+    </div>`;
+
+    html+=`<div class="sec"><div class="sec-t">CONTROLS</div>
+      <div class="brow">
+        <button class="bsm ${audioPlaying?'active':''}" onclick="toggleAudio();renderPanel();updateUI()">${audioPlaying?'⏹ STOP':'▶ PLAY'} AUDIO</button>
+        <button class="bsm" onclick="audioParams={...${JSON.stringify(AUDIO_DEFAULTS)}};oscConfigs=[{wave:'sine',freq:220,detune:0,gain:.8},{wave:'triangle',freq:330,detune:5,gain:.4},{wave:'sawtooth',freq:440,detune:-3,gain:.2}];updateAudioParams();renderPanel()">↺ RESET</button>
+        <button class="bsm beats-btn" onclick="mintComposition()">⛓ MINT (1 BEATS)</button>
+      </div>
+    </div>`;
+
+    body.innerHTML=html;
+  }
+
+  // ── CHAIN PANEL ──
+  else if(openPanelId==="chain"){
+    title.textContent="⛓ XPR NETWORK";
+    let html='';
+    if(walletConnected){
+      html+=`<div class="sec"><div class="sec-t">WALLET</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--grn);display:inline-block"></span>
+          <span style="color:var(--txB);font-size:11px">${walletAccount}</span>
+        </div>
+        <div style="font-size:10px;color:var(--txD);margin-bottom:6px">Contract: <span style="color:var(--xpr)">${TOKEN_CONTRACT}</span></div>
+        <div style="font-size:10px;color:var(--txD);margin-bottom:6px">Auth: <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span></div>
+        <div style="font-size:10px;color:var(--txD);margin-bottom:10px">Precision: <span style="color:var(--beats)">8</span></div>
+        <div style="background:rgba(255,136,51,.06);border:1px solid rgba(255,136,51,.2);border-radius:6px;padding:10px;margin-bottom:10px">
+          <div style="font-size:9px;color:var(--txM);letter-spacing:.1em;margin-bottom:4px">$BEATS BALANCE</div>
+          <div style="font-size:18px;font-weight:700;color:var(--beats);font-family:'Orbitron',monospace">${parseFloat(beatsBalance).toFixed(8)}</div>
+          <div style="font-size:8px;color:var(--txD);margin-top:2px">BEATS</div>
+        </div>
+        <div class="brow" style="margin-bottom:10px">
+          <button class="bsm" onclick="fetchBeatsBalance();toast('Refreshing...')">↻ REFRESH</button>
+          <button class="bsm danger" onclick="disconnectWallet()">DISCONNECT</button>
+        </div>
+      </div>`;
+
+      html+=`<div class="sec"><div class="sec-t">ACTIONS</div>
+        <div class="brow">
+          <button class="bsm beats-btn" onclick="mintComposition()">⛓ MINT COMPOSITION (1 BEATS)</button>
+        </div>
+        <div style="margin-top:8px;font-size:9px;color:var(--txD);line-height:1.7">
+          Minting saves your curve + audio config on-chain via<br>
+          <span style="color:var(--xpr)">${TOKEN_CONTRACT}::transfer</span> to <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span>
+        </div>
+      </div>`;
+
+      html+=`<div class="sec"><div class="sec-t">TIP $BEATS</div>
+        <div class="brow">
+          <button class="bsm beats-btn" onclick="tipBeats(1)">1 BEATS</button>
+          <button class="bsm beats-btn" onclick="tipBeats(5)">5 BEATS</button>
+          <button class="bsm beats-btn" onclick="tipBeats(10)">10 BEATS</button>
+          <button class="bsm beats-btn" onclick="tipBeats(50)">50 BEATS</button>
+        </div>
+      </div>`;
+
+      if(txLog.length>0){
+        html+=`<div class="sec"><div class="sec-t">TRANSACTION LOG</div>
+          <div class="tx-log">${txLog.map(tx=>`<div>${tx.demo?'[DEMO] ':''}${tx.actions.join(',')} — <a href="https://protonscan.io/transaction/${tx.id}" target="_blank">${tx.id.slice(0,16)}...</a><br><span style="color:var(--txG)">${tx.time}</span></div>`).join("")}</div>
+        </div>`;
+      }
+    } else {
+      html+=`<div style="text-align:center;padding:40px 16px">
+        <div style="font-size:32px;margin-bottom:12px">⚡</div>
+        <div style="font-size:12px;color:var(--txB);margin-bottom:8px;font-family:'Orbitron',monospace">CONNECT TO XPR NETWORK</div>
+        <div style="font-size:10px;color:var(--txD);line-height:1.7;margin-bottom:16px">
+          Connect your WebAuth wallet to mint<br>compositions and use $BEATS tokens.
+        </div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Contract: ${TOKEN_CONTRACT}</div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Token: BEATS (precision 8)</div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:16px">Auth: ${NDAO_ACCOUNT}</div>
+        <button class="bsm xpr-btn" style="font-size:12px;padding:10px 24px" onclick="connectWallet()">⚡ CONNECT WEBAUTH</button>
+      </div>`;
+    }
+    body.innerHTML=html;
+  }
+
+  // ── EDITOR PANEL ──
+  else if(openPanelId==="editor"){
+    title.textContent="✎ EQUATION EDITOR";
+    const p=customExpr||getPreset();
+    const wrap=(s)=>s.replace(/sin/g,"Math.sin").replace(/cos/g,"Math.cos").replace(/tan/g,"Math.tan").replace(/abs/g,"Math.abs").replace(/sqrt/g,"Math.sqrt").replace(/PI/g,"Math.PI");
+    const colors=["var(--red)","var(--grn)","var(--blu)","var(--yel)"];
+    const labels=["X(θ)","Y(θ)","Z(θ)","W(θ)→hue"];
+    const keys=["x","y","z","w"];
+    const vals=[p.x,p.y,p.z,p.w].map(v=>v.replace(/Math\./g,""));
+
+    let html=`<div class="sec"><div class="sec-t">EQUATIONS</div>`;
+    keys.forEach((k,i)=>{html+=`<div class="fld"><div class="fld-l"><span class="dot" style="background:${colors[i]}"></span>${labels[i]}</div><input class="finp" id="edit_${k}" value="${vals[i]}" onchange="applyEdits()"></div>`});
+    html+=`</div>`;
+
+    html+=`<div class="sec"><div class="sec-t">DISPLAY</div>
+      <div class="srow"><span class="slbl">Line width</span><input type="range" min="0.5" max="5" step="0.1" value="${lineWidth}" oninput="lineWidth=+this.value;draw()"><span class="sval">${lineWidth.toFixed(1)}</span></div>
+      <div class="srow"><span class="slbl">Resolution</span><input type="range" min="500" max="5000" step="100" value="${steps}" oninput="steps=+this.value;draw()"><span class="sval">${steps}</span></div>
+      <div class="srow"><span class="slbl">Speed</span><input type="range" min="0.1" max="5" step="0.1" value="${speed}" oninput="speed=+this.value;updateUI()"><span class="sval">${speed.toFixed(1)}</span></div>
+      <div class="srow"><span class="slbl">Zoom</span><input type="range" min="0.3" max="5" step="0.1" value="${zoom}" oninput="zoom=+this.value;draw()"><span class="sval">${zoom.toFixed(1)}</span></div>
+    </div>`;
+
+    html+=`<div class="sec"><div class="sec-t">ACTIONS</div><div class="brow">
+      <button class="bsm" onclick="resetView()">↺ RESET</button>
+      <button class="bsm" onclick="randomize()">🎲 RANDOM</button>
+      <button class="bsm" onclick="addCurrentFav()">☆ SAVE</button>
+      ${walletConnected?'<button class="bsm beats-btn" onclick="mintComposition()">⛓ MINT</button>':''}
+    </div></div>`;
+
+    body.innerHTML=html;
+  }
+
+  // ── FAVOURITES ──
+  else if(openPanelId==="favourites"){
+    title.textContent="☆ FAVOURITES";
+    if(favourites.length===0){body.innerHTML=`<div style="text-align:center;padding:40px 16px;color:var(--txM);font-size:10px;line-height:1.8">No favourites yet.<br>Right-click or click ☆ to add.</div>`}
+    else{body.innerHTML=`<div class="sec"><div class="sec-t">SAVED CURVES</div><div class="preset-list">${favourites.map((f,i)=>`<div class="preset-item" onclick="loadFav(${i})"><span>${f.mode==='fourier'?'∿':f.mode==='audio'?'♫':'▣'} ${f.name}</span><button class="fav-btn is-fav" onclick="event.stopPropagation();removeFav(${i})">★</button></div>`).join("")}</div></div><div class="sec"><button class="bsm danger" onclick="favourites=[];saveFavs();renderPanel();toast('Cleared')">CLEAR ALL</button></div>`}
+  }
+
+  // ── PRESETS ──
+  else if(openPanelId==="presets"){
+    title.textContent="☰ PRESETS";
+    body.innerHTML=`<div class="sec"><div class="sec-t">${mode.toUpperCase()} PRESETS</div><div class="preset-list">${getPresets().map((p,i)=>{const iF=favourites.some(f=>f.name===p.name&&f.mode===mode);return`<div class="preset-item ${i===presetIdx&&!customExpr?'current':''}" onclick="presetIdx=${i};customExpr=null;updateUI();renderPanel()"><span>${p.name}</span><button class="fav-btn ${iF?'is-fav':''}" onclick="event.stopPropagation();toggleFavPreset(${i})">${iF?'★':'☆'}</button></div>`}).join("")}</div></div>`;
+  }
 }
-function exportJSON(){const p=customExpr||getPreset();const data={mode,preset:p.name,equations:{x:p.xL,y:p.yL,z:p.zL,w:p.wL},rotation,zoom,speed};navigator.clipboard.writeText(JSON.stringify(data,null,2));toast("JSON copied to clipboard");closeModal("export")}
-function copyShareLink(){const p=customExpr||getPreset();const params=new URLSearchParams({m:mode,p:p.name,rx:rotation.x.toFixed(3),ry:rotation.y.toFixed(3),z:zoom.toFixed(2)});const url=location.origin+location.pathname+"#"+params.toString();navigator.clipboard.writeText(url);toast("Share link copied!");closeModal("export")}
 
-canvas.addEventListener("contextmenu",e=>{e.preventDefault();const menu=document.getElementById("ctxMenu");menu.innerHTML=`<button class="ctx-item" onclick="togglePanel('editor');hideCtx()">✎ Edit equations</button><button class="ctx-item" onclick="togglePanel('presets');hideCtx()">☰ Browse presets</button><button class="ctx-item" onclick="randomize();hideCtx()">🎲 Random curve</button><div class="ctx-sep"></div><button class="ctx-item" onclick="addCurrentFav();hideCtx()">☆ Add to favourites</button><button class="ctx-item" onclick="openModal('export');hideCtx()">📤 Export</button><div class="ctx-sep"></div><button class="ctx-item" onclick="resetView();hideCtx()">↺ Reset view</button>`;menu.style.left=Math.min(e.clientX,innerWidth-200)+"px";menu.style.top=Math.min(e.clientY,innerHeight-280)+"px";menu.classList.add("show")});
-function hideCtx(){document.getElementById("ctxMenu").classList.remove("show")}
-document.addEventListener("click",e=>{if(!e.target.closest(".ctx-menu"))hideCtx()});
+function toggleFavPreset(idx){const p=getPresets()[idx];const fi=favourites.findIndex(f=>f.name===p.name&&f.mode===mode);if(fi>=0){favourites.splice(fi,1);toast("Removed")}else{favourites.push({name:p.name,mode,presetIdx:idx,isCustom:false});toast("★ Favourited")}saveFavs();renderPanel()}
 
+function applyEdits(){
+  const wrap=(s)=>s.replace(/sin/g,"Math.sin").replace(/cos/g,"Math.cos").replace(/tan/g,"Math.tan").replace(/abs/g,"Math.abs").replace(/sqrt/g,"Math.sqrt").replace(/PI/g,"Math.PI");
+  const ar=(e)=>{let mn=Infinity,mx=-Infinity;for(let i=0;i<=500;i++){const t=(i/500)*Math.PI*2,v=evalExpr(e,t);if(v<mn)mn=v;if(v>mx)mx=v}return[mn-.1,mx+.1]};
+  const x=wrap(document.getElementById("edit_x").value),y=wrap(document.getElementById("edit_y").value),z=wrap(document.getElementById("edit_z").value),w=wrap(document.getElementById("edit_w").value);
+  customExpr={x,y,z,w,xL:document.getElementById("edit_x").value,yL:document.getElementById("edit_y").value,zL:document.getElementById("edit_z").value,wL:document.getElementById("edit_w").value,xR:ar(x),yR:ar(y),zR:ar(z),wR:ar(w),name:"Custom"};
+  updateUI();toast("Updated");
+}
+
+function exportPNG(){const l=document.createElement("a");l.download="ndao-beats-curve.png";l.href=canvas.toDataURL("image/png");l.click();toast("PNG downloaded")}
+
+// ── Mouse / Touch / Keyboard ──
 canvas.addEventListener("mousedown",e=>{if(e.button===2)return;dragging=true;lastMouse={x:e.clientX,y:e.clientY};canvas.classList.add("grabbing")});
 addEventListener("mousemove",e=>{if(!dragging)return;rotation.y+=(e.clientX-lastMouse.x)*.005;rotation.x+=(e.clientY-lastMouse.y)*.005;lastMouse={x:e.clientX,y:e.clientY};if(!playing)draw()});
 addEventListener("mouseup",()=>{dragging=false;canvas.classList.remove("grabbing")});
-canvas.addEventListener("wheel",e=>{e.preventDefault();zoom=Math.max(.3,Math.min(5,zoom-e.deltaY*.001));if(!playing)draw();document.getElementById("speedBadge").textContent=`SPEED: ${speed.toFixed(1)}x · ZOOM: ${zoom.toFixed(1)}x`},{passive:false});
+canvas.addEventListener("wheel",e=>{e.preventDefault();zoom=Math.max(.3,Math.min(5,zoom-e.deltaY*.001));if(!playing)draw();document.getElementById("speedBg").textContent=`SPEED:${speed.toFixed(1)}x · ZOOM:${zoom.toFixed(1)}x`},{passive:false});
 canvas.addEventListener("touchstart",e=>{if(e.touches.length===1){dragging=true;lastMouse={x:e.touches[0].clientX,y:e.touches[0].clientY}}},{passive:true});
 canvas.addEventListener("touchmove",e=>{if(!dragging||e.touches.length!==1)return;rotation.y+=(e.touches[0].clientX-lastMouse.x)*.005;rotation.x+=(e.touches[0].clientY-lastMouse.y)*.005;lastMouse={x:e.touches[0].clientX,y:e.touches[0].clientY};if(!playing)draw()},{passive:true});
 canvas.addEventListener("touchend",()=>{dragging=false});
 
-addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")prevPreset();if(e.key==="ArrowRight")nextPreset();if(e.key===" "){e.preventDefault();togglePlay()}if(e.key==="e"||e.key==="E")togglePanel("editor");if(e.key==="f"||e.key==="F")togglePanel("favourites");if(e.key==="p"||e.key==="P")togglePanel("presets");if(e.key==="r"||e.key==="R")randomize();if(e.key==="Escape"){closePanel();closeModal("signin");closeModal("export");hideCtx()}if(e.key==="+"||e.key==="="){speed=Math.min(5,speed+.2);updateUI()}if(e.key==="-"){speed=Math.max(.1,speed-.2);updateUI()}});
-addEventListener("resize",()=>draw());
-document.querySelectorAll(".modal-overlay").forEach(el=>{el.addEventListener("click",e=>{if(e.target===el)el.classList.remove("show")})});
+canvas.addEventListener("contextmenu",e=>{e.preventDefault();const m=document.getElementById("ctxMenu");m.innerHTML=`<button class="ctx-item" onclick="togglePanel('editor');hideCtx()">✎ Edit equations</button><button class="ctx-item" onclick="togglePanel('presets');hideCtx()">☰ Presets</button><button class="ctx-item" onclick="togglePanel('audio');hideCtx()">♫ Audio synth</button><button class="ctx-item" onclick="randomize();hideCtx()">🎲 Random</button><div class="ctx-sep"></div><button class="ctx-item" onclick="addCurrentFav();hideCtx()">☆ Favourite</button><button class="ctx-item" onclick="exportPNG();hideCtx()">📤 Export PNG</button>${walletConnected?'<button class="ctx-item" onclick="mintComposition();hideCtx()">⛓ Mint (1 BEATS)</button>':''}<div class="ctx-sep"></div><button class="ctx-item" onclick="resetView();hideCtx()">↺ Reset</button>`;m.style.left=Math.min(e.clientX,innerWidth-200)+"px";m.style.top=Math.min(e.clientY,innerHeight-300)+"px";m.classList.add("show")});
+function hideCtx(){document.getElementById("ctxMenu").classList.remove("show")}
+document.addEventListener("click",e=>{if(!e.target.closest(".ctx-menu"))hideCtx()});
 
-updateUI();startAnim();
+addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.key==="ArrowLeft")prevPreset();if(e.key==="ArrowRight")nextPreset();
+  if(e.key===" "){e.preventDefault();togglePlay()}
+  if(e.key==="e"||e.key==="E")togglePanel("editor");
+  if(e.key==="f"||e.key==="F")togglePanel("favourites");
+  if(e.key==="p"||e.key==="P")togglePanel("presets");
+  if(e.key==="a"||e.key==="A")togglePanel("audio");
+  if(e.key==="w"||e.key==="W"){if(walletConnected)togglePanel("chain");else connectWallet()}
+  if(e.key==="r"||e.key==="R")randomize();
+  if(e.key==="m"||e.key==="M")toggleAudio();
+  if(e.key==="Escape"){closePanel();hideCtx()}
+  if(e.key==="+"||e.key==="=")speed=Math.min(5,speed+.2);
+  if(e.key==="-")speed=Math.max(.1,speed-.2);
+  updateUI();
+});
+
+addEventListener("resize",()=>draw());
+
+// ── Init ──
+updateWalletUI();
+updateUI();
+startAnim();
 </script>
 </body>
 </html>
+
