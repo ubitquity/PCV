@@ -184,8 +184,47 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- ProtonWebSDK — live XPR Network -->
-<script src="https://cdn.jsdelivr.net/npm/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js"></script>
+<!-- ProtonWebSDK — live XPR Network (cdnjs primary, unpkg + jsdelivr fallbacks) -->
+<script>
+// Robust multi-CDN loader for @proton/web-sdk
+(function loadProtonSDK() {
+  const sources = [
+    "https://cdnjs.cloudflare.com/ajax/libs/proton-web-sdk/4.2.20/bundle.min.js",
+    "https://unpkg.com/@proton/web-sdk@4.2.20",
+    "https://cdn.jsdelivr.net/npm/@proton/web-sdk@4.2.20",
+    "https://cdnjs.cloudflare.com/ajax/libs/proton-web-sdk/4.2.20/bundle.js"
+  ];
+  let idx = 0;
+  function tryLoad() {
+    if (window.ProtonWebSDK) { console.log("[XPR] ProtonWebSDK already available"); return; }
+    if (idx >= sources.length) {
+      console.error("[XPR] All CDN sources failed to load ProtonWebSDK");
+      document.getElementById("walletBtn").innerHTML = "⚠ SDK FAILED";
+      document.getElementById("walletBtn").title = "ProtonWebSDK could not be loaded from any CDN";
+      return;
+    }
+    const src = sources[idx++];
+    console.log("[XPR] Loading SDK from:", src);
+    const script = document.createElement("script");
+    script.src = src;
+    script.crossOrigin = "anonymous";
+    script.onload = function() {
+      if (window.ProtonWebSDK) {
+        console.log("[XPR] ProtonWebSDK loaded successfully from:", src);
+      } else {
+        console.warn("[XPR] Script loaded but ProtonWebSDK not found, trying next source...");
+        tryLoad();
+      }
+    };
+    script.onerror = function() {
+      console.warn("[XPR] Failed to load from:", src);
+      tryLoad();
+    };
+    document.head.appendChild(script);
+  }
+  tryLoad();
+})();
+</script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  XPR NETWORK — LIVE WEBAUTH INTEGRATION
@@ -258,8 +297,19 @@ async function restoreSession() {
 async function connectWallet() {
   if (walletConnected) { togglePanel("chain"); return; }
 
+  // Wait for SDK if still loading (up to 5 seconds)
   if (!window.ProtonWebSDK) {
-    showToast("WebAuth SDK failed to load. Refresh page.");
+    showToast("Loading WebAuth SDK...");
+    let waited = 0;
+    while (!window.ProtonWebSDK && waited < 5000) {
+      await new Promise(r => setTimeout(r, 250));
+      waited += 250;
+    }
+  }
+
+  if (!window.ProtonWebSDK) {
+    showToast("⚠ WebAuth SDK not loaded — check your connection and refresh");
+    console.error("[XPR] ProtonWebSDK is not available on window");
     return;
   }
 
@@ -1073,7 +1123,18 @@ startAnim();
 
 // Restore WebAuth session on page load
 (async () => {
-  await restoreSession();
+  // Wait for ProtonWebSDK to be available (up to 8 seconds)
+  let waited = 0;
+  while (!window.ProtonWebSDK && waited < 8000) {
+    await new Promise(r => setTimeout(r, 200));
+    waited += 200;
+  }
+  if (window.ProtonWebSDK) {
+    console.log("[XPR] SDK ready, restoring session...");
+    await restoreSession();
+  } else {
+    console.warn("[XPR] SDK not available after timeout");
+  }
   // Auto-refresh balance every 30 seconds if connected
   setInterval(async () => {
     if (walletConnected) {
