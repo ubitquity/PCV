@@ -1004,7 +1004,7 @@ function renderPanel(){
             const statusColor = tx.status==='confirmed'?'var(--grn)':tx.status==='failed'?'var(--red)':'var(--yel)';
             const statusIcon = tx.status==='confirmed'?'✓':tx.status==='failed'?'✗':'⏳';
             const txIdDisplay = tx.id.startsWith('failed_')||tx.id.startsWith('pending_')?tx.id:tx.id.slice(0,16)+'...';
-            const txLink = tx.id.startsWith('failed_')||tx.id.startsWith('pending_')?txIdDisplay:`<a href="https://protonscan.io/transaction/${tx.id}" target="_blank" rel="noopener">${txIdDisplay}</a>`;
+            const txLink = tx.id.startsWith('failed_')||tx.id.startsWith('pending_')?txIdDisplay:`<a href="https://explorer.xprnetwork.org/transaction/${tx.id}" target="_blank" rel="noopener">${txIdDisplay}</a>`;
             return`<div style="margin-bottom:4px"><span style="color:${statusColor}">${statusIcon}</span> ${tx.actions.join(', ')} — ${txLink}${tx.error?'<br><span style="color:var(--red);font-size:7px">'+tx.error+'</span>':''}<br><span style="color:var(--txG)">${new Date(tx.time).toLocaleString()}</span></div>`;
           }).join("")}</div>
         </div>`;
