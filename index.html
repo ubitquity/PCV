@@ -184,6 +184,25 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- lamejs — MP3 encoder (jsdelivr primary, unpkg fallback) -->
+<script>
+(function loadLamejs() {
+  const srcs = [
+    "https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js",
+    "https://unpkg.com/lamejs@1.2.1/lame.min.js"
+  ];
+  let i = 0;
+  function tryLoad() {
+    if (i >= srcs.length) { console.warn("[MP3] lamejs unavailable — MP3 export disabled"); return; }
+    const s = document.createElement("script"); s.src = srcs[i++]; s.crossOrigin = "anonymous";
+    s.onerror = tryLoad;
+    s.onload = () => { if (!window.lamejs) tryLoad(); else console.log("[MP3] lamejs loaded"); };
+    document.head.appendChild(s);
+  }
+  tryLoad();
+})();
+</script>
+
 <!-- ProtonWebSDK — live XPR Network (cdnjs primary, unpkg + jsdelivr fallbacks) -->
 <script>
 // Robust multi-CDN loader for @proton/web-sdk
@@ -1001,6 +1020,63 @@ function renderPanel(){
       </div>
     </div>`;
 
+    // DOWNLOAD section
+    html+=`<div class="sec"><div class="sec-t">DOWNLOAD</div>
+      <div class="srow" style="margin-bottom:10px">
+        <span class="slbl">Duration</span>
+        <div class="brow" style="flex:1">
+          ${[5,10,30,60].map(s=>`<button class="bsm ${renderDurationSec===s?'active':''}" onclick="renderDurationSec=${s};renderPanel()">${s}s</button>`).join("")}
+        </div>
+      </div>
+      <div class="brow">
+        <button class="bsm" onclick="downloadWAV()" title="Renders ${renderDurationSec}s of audio as PCM WAV">↓ WAV</button>
+        <button class="bsm" onclick="downloadMP3()" title="Renders ${renderDurationSec}s of audio as 128kbps MP3">↓ MP3</button>
+        <button class="bsm" onclick="downloadMIDI()" title="Downloads oscillator config as MIDI file">↓ MIDI</button>
+      </div>
+      <div style="font-size:8px;color:var(--txG);margin-top:7px;line-height:1.6">WAV/MP3: offline-rendered · MIDI: from oscillator settings</div>
+    </div>`;
+
+    // CLOUD STORAGE section — shown for all users; upload requires wallet
+    (async () => {
+      if (walletConnected) await loadCloudFiles();
+    })();
+
+    html+=`<div class="sec"><div class="sec-t">CLOUD STORAGE ${walletConnected?'<span style="color:var(--grn);font-size:7px">● '+walletAccount+'</span>':'<span style="color:var(--txG);font-size:7px">connect wallet</span>'}</div>`;
+
+    if (walletConnected) {
+      html+=`<div class="brow" style="margin-bottom:10px">
+        <button class="bsm" onclick="saveToServer('wav')" title="Render &amp; save WAV to server">☁ WAV</button>
+        <button class="bsm" onclick="saveToServer('mp3')" title="Render &amp; save MP3 to server">☁ MP3</button>
+        <button class="bsm" onclick="saveToServer('mid')" title="Save MIDI to server">☁ MIDI</button>
+        <button class="bsm" onclick="loadCloudFiles().then(()=>renderPanel())" title="Refresh file list">↻</button>
+      </div>`;
+
+      if (cloudFiles.length === 0) {
+        html+=`<div style="font-size:9px;color:var(--txG);padding:8px 0">No files saved yet. Render &amp; upload above.</div>`;
+      } else {
+        html+=`<div style="max-height:160px;overflow-y:auto;margin-bottom:4px">`;
+        cloudFiles.forEach(f => {
+          const ext = f.filename.split('.').pop().toUpperCase();
+          const extColor = ext==='WAV'?'var(--blu)':ext==='MP3'?'var(--orn)':'var(--pur)';
+          html+=`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:9px">
+            <span style="color:${extColor};font-weight:700;width:28px;flex-shrink:0">${ext}</span>
+            <span style="flex:1;color:var(--txD);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.filename}">${f.filename}</span>
+            <span style="color:var(--txG);flex-shrink:0">${formatBytes(f.size)}</span>
+            <a href="${cloudFileDownloadUrl(f.filename)}" download="${f.filename}" style="color:var(--cyn);text-decoration:none;flex-shrink:0" title="Download">↓</a>
+            <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;flex-shrink:0;padding:0" onclick="deleteCloudFile('${f.filename.replace(/'/g,"\\'")}')">×</button>
+          </div>`;
+        });
+        html+=`</div><div style="font-size:8px;color:var(--txG)">${cloudFiles.length} file${cloudFiles.length===1?'':'s'} stored</div>`;
+      }
+    } else {
+      html+=`<div style="font-size:9px;color:var(--txD);line-height:1.7;padding:8px 0">
+        Connect your XPR Network WebAuth wallet to save audio files to the server, keyed to your account.
+      </div>
+      <button class="bsm xpr-btn" onclick="connectWallet()">⚡ CONNECT WALLET</button>`;
+    }
+
+    html+=`</div>`;
+
     body.innerHTML=html;
   }
 
@@ -1177,7 +1253,7 @@ canvas.addEventListener("touchstart",e=>{if(e.touches.length===1){dragging=true;
 canvas.addEventListener("touchmove",e=>{if(!dragging||e.touches.length!==1)return;rotation.y+=(e.touches[0].clientX-lastMouse.x)*.005;rotation.x+=(e.touches[0].clientY-lastMouse.y)*.005;lastMouse={x:e.touches[0].clientX,y:e.touches[0].clientY};if(!playing)draw()},{passive:true});
 canvas.addEventListener("touchend",()=>{dragging=false});
 
-canvas.addEventListener("contextmenu",e=>{e.preventDefault();const m=document.getElementById("ctxMenu");m.innerHTML=`<button class="ctx-item" onclick="togglePanel('editor');hideCtx()">✎ Edit equations</button><button class="ctx-item" onclick="togglePanel('presets');hideCtx()">☰ Presets</button><button class="ctx-item" onclick="togglePanel('audio');hideCtx()">♫ Audio synth</button><button class="ctx-item" onclick="randomize();hideCtx()">🎲 Random</button><div class="ctx-sep"></div><button class="ctx-item" onclick="addCurrentFav();hideCtx()">☆ Favourite</button><button class="ctx-item" onclick="exportPNG();hideCtx()">📤 Export PNG</button>${walletConnected?'<button class="ctx-item" onclick="mintComposition();hideCtx()">⛓ Mint (1 BEATS)</button>':''}<div class="ctx-sep"></div><button class="ctx-item" onclick="resetView();hideCtx()">↺ Reset</button>`;m.style.left=Math.min(e.clientX,innerWidth-200)+"px";m.style.top=Math.min(e.clientY,innerHeight-300)+"px";m.classList.add("show")});
+canvas.addEventListener("contextmenu",e=>{e.preventDefault();const m=document.getElementById("ctxMenu");m.innerHTML=`<button class="ctx-item" onclick="togglePanel('editor');hideCtx()">✎ Edit equations</button><button class="ctx-item" onclick="togglePanel('presets');hideCtx()">☰ Presets</button><button class="ctx-item" onclick="togglePanel('audio');hideCtx()">♫ Audio synth</button><button class="ctx-item" onclick="randomize();hideCtx()">🎲 Random</button><div class="ctx-sep"></div><button class="ctx-item" onclick="addCurrentFav();hideCtx()">☆ Favourite</button><button class="ctx-item" onclick="exportPNG();hideCtx()">📤 Export PNG</button><button class="ctx-item" onclick="downloadWAV();hideCtx()">↓ Download WAV</button><button class="ctx-item" onclick="downloadMP3();hideCtx()">↓ Download MP3</button><button class="ctx-item" onclick="downloadMIDI();hideCtx()">↓ Download MIDI</button>${walletConnected?'<button class="ctx-item" onclick="mintComposition();hideCtx()">⛓ Mint (1 BEATS)</button>':''}<div class="ctx-sep"></div><button class="ctx-item" onclick="resetView();hideCtx()">↺ Reset</button>`;m.style.left=Math.min(e.clientX,innerWidth-200)+"px";m.style.top=Math.min(e.clientY,innerHeight-300)+"px";m.classList.add("show")});
 function hideCtx(){document.getElementById("ctxMenu").classList.remove("show")}
 document.addEventListener("click",e=>{if(!e.target.closest(".ctx-menu"))hideCtx()});
 
@@ -1199,6 +1275,295 @@ addEventListener("keydown",e=>{
 });
 
 addEventListener("resize",()=>draw());
+
+// ═══════════════════════════════════════════════════════════════
+//  AUDIO EXPORT — WAV · MP3 · MIDI
+// ═══════════════════════════════════════════════════════════════
+
+let renderDurationSec = 10; // user-adjustable: 5 / 10 / 30 / 60
+
+// Render current synth settings to an AudioBuffer via OfflineAudioContext
+async function renderAudioBuffer(durationSec) {
+  const sr = 44100;
+  const offCtx = new OfflineAudioContext(1, Math.round(sr * durationSec), sr);
+
+  const offFilter = offCtx.createBiquadFilter();
+  offFilter.type = audioParams.filterType;
+  offFilter.frequency.value = audioParams.filterFreq;
+  offFilter.Q.value = audioParams.filterQ;
+
+  const offMaster = offCtx.createGain();
+  offMaster.gain.value = audioParams.masterVol;
+
+  // LFO
+  const offLfo = offCtx.createOscillator();
+  const offLfoGain = offCtx.createGain();
+  offLfo.frequency.value = audioParams.lfoRate;
+  offLfoGain.gain.value = audioParams.lfoDepth;
+  offLfo.connect(offLfoGain);
+  offLfoGain.connect(offFilter.frequency);
+  offLfo.start(0);
+
+  // Oscillators
+  oscConfigs.forEach(cfg => {
+    const osc = offCtx.createOscillator();
+    const g = offCtx.createGain();
+    osc.type = cfg.wave;
+    osc.frequency.value = cfg.freq;
+    osc.detune.value = cfg.detune;
+    g.gain.value = cfg.gain;
+    osc.connect(g);
+    g.connect(offFilter);
+    osc.start(0);
+  });
+
+  offFilter.connect(offMaster);
+  offMaster.connect(offCtx.destination);
+  return await offCtx.startRendering();
+}
+
+// AudioBuffer → WAV ArrayBuffer (16-bit mono PCM)
+function audioBufferToWav(buffer) {
+  const sr = buffer.sampleRate;
+  const samples = buffer.getChannelData(0);
+  const dataLen = samples.length * 2; // 16-bit = 2 bytes/sample
+  const ab = new ArrayBuffer(44 + dataLen);
+  const v = new DataView(ab);
+  const wr = (off, str) => { for (let i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); };
+  wr(0, "RIFF"); v.setUint32(4, 36 + dataLen, true);
+  wr(8, "WAVE"); wr(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  wr(36, "data"); v.setUint32(40, dataLen, true);
+  let off = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    off += 2;
+  }
+  return ab;
+}
+
+// AudioBuffer → MP3 Blob via lamejs
+function audioBufferToMp3(buffer) {
+  if (!window.lamejs) throw new Error("lamejs not loaded — try WAV instead");
+  const sr = buffer.sampleRate;
+  const samples = buffer.getChannelData(0);
+  const encoder = new lamejs.Mp3Encoder(1, sr, 128);
+  const blockSize = 1152;
+  const int16 = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  const parts = [];
+  for (let i = 0; i < int16.length; i += blockSize) {
+    const chunk = int16.subarray(i, Math.min(i + blockSize, int16.length));
+    const buf = encoder.encodeBuffer(chunk);
+    if (buf.length > 0) parts.push(new Int8Array(buf));
+  }
+  const flush = encoder.flush();
+  if (flush.length > 0) parts.push(new Int8Array(flush));
+  return new Blob(parts, { type: "audio/mp3" });
+}
+
+// Generate MIDI file (format 0) from current oscConfigs
+function generateMidi(durationSec) {
+  const ticksPerBeat = 480;
+  const bpm = 120;
+  const usPerBeat = Math.round(60000000 / bpm);
+  const totalTicks = Math.round(durationSec * bpm / 60 * ticksPerBeat);
+
+  function varLen(n) {
+    if (n < 128) return [n];
+    const b = [];
+    while (n > 0) { b.unshift(n & 0x7F); n >>= 7; }
+    for (let i = 0; i < b.length - 1; i++) b[i] |= 0x80;
+    return b;
+  }
+  function freqToNote(f) {
+    return Math.max(0, Math.min(127, Math.round(69 + 12 * Math.log2(f / 440))));
+  }
+  // Map oscillator waveform to GM patch (approximate)
+  const wavePatch = { sine: 81, triangle: 79, sawtooth: 38, square: 80 };
+
+  const track = [];
+  // Tempo meta-event (delta=0)
+  track.push(...varLen(0), 0xFF, 0x51, 0x03,
+    (usPerBeat >> 16) & 0xFF, (usPerBeat >> 8) & 0xFF, usPerBeat & 0xFF);
+
+  // Program change + note-on for each oscillator
+  oscConfigs.forEach((cfg, i) => {
+    const ch = i % 9 >= 9 ? i % 9 + 1 : i % 9; // skip ch 10 (drums)
+    const patch = (wavePatch[cfg.wave] || 81) - 1;
+    const note = freqToNote(cfg.freq);
+    const vel = Math.min(127, Math.max(1, Math.round(cfg.gain * 90)));
+    track.push(...varLen(0), 0xC0 | ch, patch); // program change
+    track.push(...varLen(0), 0x90 | ch, note, vel); // note on
+  });
+
+  // Note-off for each oscillator after totalTicks
+  oscConfigs.forEach((cfg, i) => {
+    const ch = i % 9 >= 9 ? i % 9 + 1 : i % 9;
+    const note = freqToNote(cfg.freq);
+    const delta = i === 0 ? totalTicks : 0;
+    track.push(...varLen(delta), 0x80 | ch, note, 0); // note off
+  });
+
+  // End of track
+  track.push(0x00, 0xFF, 0x2F, 0x00);
+
+  const tlen = track.length;
+  const header = [
+    0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, // MThd
+    0x00, 0x00,             // format 0
+    0x00, 0x01,             // 1 track
+    (ticksPerBeat >> 8) & 0xFF, ticksPerBeat & 0xFF
+  ];
+  const trkHdr = [
+    0x4D, 0x54, 0x72, 0x6B,
+    (tlen >> 24) & 0xFF, (tlen >> 16) & 0xFF, (tlen >> 8) & 0xFF, tlen & 0xFF
+  ];
+  return new Uint8Array([...header, ...trkHdr, ...track]);
+}
+
+// Trigger browser download
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function getAudioFilename(ext) {
+  const p = customExpr || getPreset();
+  const name = (p.name || "audio").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "");
+  return `ndao-beats-${name}-${renderDurationSec}s.${ext}`;
+}
+
+async function downloadWAV() {
+  showToast(`Rendering ${renderDurationSec}s WAV...`);
+  try {
+    const buf = await renderAudioBuffer(renderDurationSec);
+    const wav = audioBufferToWav(buf);
+    downloadBlob(new Blob([wav], { type: "audio/wav" }), getAudioFilename("wav"));
+    showToast("WAV downloaded");
+  } catch (e) {
+    showToast("WAV error: " + e.message);
+  }
+}
+
+async function downloadMP3() {
+  if (!window.lamejs) { showToast("MP3 encoder not ready — try again"); return; }
+  showToast(`Rendering ${renderDurationSec}s MP3...`);
+  try {
+    const buf = await renderAudioBuffer(renderDurationSec);
+    const mp3 = audioBufferToMp3(buf);
+    downloadBlob(mp3, getAudioFilename("mp3"));
+    showToast("MP3 downloaded");
+  } catch (e) {
+    showToast("MP3 error: " + e.message);
+  }
+}
+
+function downloadMIDI() {
+  try {
+    const midi = generateMidi(renderDurationSec);
+    downloadBlob(new Blob([midi], { type: "audio/midi" }), getAudioFilename("mid"));
+    showToast("MIDI downloaded");
+  } catch (e) {
+    showToast("MIDI error: " + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CLOUD STORAGE — upload/list/delete via server API
+// ═══════════════════════════════════════════════════════════════
+
+const STORAGE_API = ""; // same origin (served by server.js); override if needed
+
+async function saveToServer(format) {
+  if (!walletConnected) { showToast("Connect wallet first"); return; }
+  showToast(`Rendering ${renderDurationSec}s ${format.toUpperCase()}...`);
+
+  let blob, filename;
+  try {
+    if (format === "mid") {
+      const midi = generateMidi(renderDurationSec);
+      blob = new Blob([midi], { type: "audio/midi" });
+      filename = getAudioFilename("mid");
+    } else {
+      const buf = await renderAudioBuffer(renderDurationSec);
+      if (format === "mp3") {
+        if (!window.lamejs) { showToast("MP3 encoder not ready"); return; }
+        blob = audioBufferToMp3(buf);
+        filename = getAudioFilename("mp3");
+      } else {
+        blob = new Blob([audioBufferToWav(buf)], { type: "audio/wav" });
+        filename = getAudioFilename("wav");
+      }
+    }
+  } catch (e) {
+    showToast("Render error: " + e.message); return;
+  }
+
+  showToast(`Uploading ${filename}...`);
+  try {
+    const fd = new FormData();
+    fd.append("wallet", walletAccount);
+    fd.append("filename", filename);
+    fd.append("file", blob, filename);
+
+    const res = await fetch(`${STORAGE_API}/api/audio/upload`, { method: "POST", body: fd });
+    if (!res.ok) { const e = await res.json(); showToast("Upload error: " + e.error); return; }
+    const data = await res.json();
+    showToast(`Saved: ${data.filename}`);
+    if (openPanelId === "audio") renderPanel();
+  } catch (e) {
+    showToast("Upload failed: " + (e.message || "Check server"));
+  }
+}
+
+let cloudFiles = [];
+async function loadCloudFiles() {
+  if (!walletConnected) { cloudFiles = []; return; }
+  try {
+    const res = await fetch(`${STORAGE_API}/api/audio/list/${walletAccount}`);
+    if (!res.ok) { cloudFiles = []; return; }
+    const data = await res.json();
+    cloudFiles = data.files || [];
+  } catch { cloudFiles = []; }
+}
+
+async function deleteCloudFile(filename) {
+  if (!walletConnected) return;
+  try {
+    const res = await fetch(
+      `${STORAGE_API}/api/audio/file/${walletAccount}/${encodeURIComponent(filename)}`,
+      { method: "DELETE" }
+    );
+    if (res.ok) {
+      showToast(`Deleted: ${filename}`);
+      await loadCloudFiles();
+      if (openPanelId === "audio") renderPanel();
+    } else {
+      showToast("Delete failed");
+    }
+  } catch (e) {
+    showToast("Delete error: " + e.message);
+  }
+}
+
+function cloudFileDownloadUrl(filename) {
+  return `${STORAGE_API}/api/audio/file/${walletAccount}/${encodeURIComponent(filename)}`;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1024 / 1024).toFixed(1) + " MB";
+}
 
 // ── Init ──
 updateWalletUI();
