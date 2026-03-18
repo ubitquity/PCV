@@ -184,24 +184,26 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- ProtonWebSDK -->
-<script src="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.10.0/dist/web.min.js" onerror=""></script>
+<!-- ProtonWebSDK — live XPR Network -->
+<script src="https://cdn.jsdelivr.net/npm/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  PROTON / WEBAUTH SDK LOADER
+//  XPR NETWORK — LIVE WEBAUTH INTEGRATION
 // ═══════════════════════════════════════════════════════════════
-let protonSDK = null;
+let protonLink = null;
 let session = null;
 let walletConnected = false;
 let walletAccount = "";
+let walletPermission = "active";
 let beatsBalance = "0.00000000";
 
-// XPR Network endpoints with fallback
+// XPR Network mainnet endpoints (ordered by reliability)
 const XPR_ENDPOINTS = [
   "https://proton.eosusa.io",
   "https://proton.cryptolions.io",
   "https://api.protonnz.com",
-  "https://proton.pink.gg"
+  "https://proton.pink.gg",
+  "https://proton.greymass.com"
 ];
 const CHAIN_ID = "384da888112027f0321850a169f737c33e53b388aad48b5adace4bab97f437e0";
 const APP_NAME = "nDAO BEATS Synthesizer";
@@ -209,40 +211,10 @@ const TOKEN_CONTRACT = "tokencreate";
 const TOKEN_SYMBOL = "8,BEATS";
 const NDAO_ACCOUNT = "nftitledao";
 
-async function loadProtonSDK() {
-  // Try loading ProtonWebSDK from CDN
-  if (window.ProtonWebSDK) return;
-  const script = document.createElement("script");
-  script.src = "https://cdn.jsdelivr.net/npm/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js";
-  script.onerror = () => {
-    // Fallback CDN
-    const s2 = document.createElement("script");
-    s2.src = "https://unpkg.com/@nicknguyen/proton-web-sdk@4.2.16/dist/proton-web-sdk.min.js";
-    document.head.appendChild(s2);
-  };
-  document.head.appendChild(script);
-}
-loadProtonSDK();
-
-async function connectWallet() {
-  if (walletConnected) { togglePanel("chain"); return; }
+// ── Restore session on page load ──
+async function restoreSession() {
+  if (!window.ProtonWebSDK) return;
   try {
-    if (!window.ProtonWebSDK) {
-      // Attempt direct WebAuth connection via API
-      showToast("Loading WebAuth SDK...");
-      await new Promise(r => setTimeout(r, 1000));
-      if (!window.ProtonWebSDK) {
-        // Fallback: simulate for demo
-        showToast("WebAuth SDK loading... Attempting connection");
-        walletConnected = true;
-        walletAccount = "demo.user";
-        beatsBalance = "1000.00000000";
-        updateWalletUI();
-        togglePanel("chain");
-        return;
-      }
-    }
-
     const { link, session: sess } = await ProtonWebSDK({
       linkOptions: {
         endpoints: XPR_ENDPOINTS,
@@ -254,48 +226,148 @@ async function connectWallet() {
       },
       selectorOptions: {
         appName: APP_NAME,
-        appLogo: "",
+        appLogo: "https://nftitle.net/images/ndao-logo.png",
+        customStyleOptions: {
+          modalBackgroundColor: "#0a0c0f",
+          logoBackgroundColor: "#10131a",
+          isLogoRound: true,
+          optionBackgroundColor: "#141820",
+          optionFontColor: "#e0e4f0",
+          primaryFontColor: "#8a90a0",
+          secondaryFontColor: "#555a6e",
+          linkColor: "#7b68ee",
+        },
+      },
+    });
+    if (sess) {
+      protonLink = link;
+      session = sess;
+      walletConnected = true;
+      walletAccount = sess.auth.actor.toString();
+      walletPermission = sess.auth.permission.toString();
+      await fetchBeatsBalance();
+      updateWalletUI();
+      console.log("[XPR] Session restored:", walletAccount);
+    }
+  } catch (e) {
+    console.log("[XPR] No previous session to restore");
+  }
+}
+
+// ── Connect wallet (live WebAuth) ──
+async function connectWallet() {
+  if (walletConnected) { togglePanel("chain"); return; }
+
+  if (!window.ProtonWebSDK) {
+    showToast("WebAuth SDK failed to load. Refresh page.");
+    return;
+  }
+
+  try {
+    showToast("Opening WebAuth...");
+
+    const { link, session: sess } = await ProtonWebSDK({
+      linkOptions: {
+        endpoints: XPR_ENDPOINTS,
+        chainId: CHAIN_ID,
+        restoreSession: false,
+      },
+      transportOptions: {
+        requestAccount: NDAO_ACCOUNT,
+      },
+      selectorOptions: {
+        appName: APP_NAME,
+        appLogo: "https://nftitle.net/images/ndao-logo.png",
+        customStyleOptions: {
+          modalBackgroundColor: "#0a0c0f",
+          logoBackgroundColor: "#10131a",
+          isLogoRound: true,
+          optionBackgroundColor: "#141820",
+          optionFontColor: "#e0e4f0",
+          primaryFontColor: "#8a90a0",
+          secondaryFontColor: "#555a6e",
+          linkColor: "#7b68ee",
+        },
       },
     });
 
-    protonSDK = link;
+    protonLink = link;
     session = sess;
     walletConnected = true;
     walletAccount = sess.auth.actor.toString();
-    showToast(`Connected: ${walletAccount}`);
+    walletPermission = sess.auth.permission.toString();
+
+    showToast(`⚡ Connected: ${walletAccount}`);
+    console.log("[XPR] Connected:", walletAccount, "@", walletPermission);
+
     await fetchBeatsBalance();
     updateWalletUI();
     togglePanel("chain");
+
   } catch (err) {
-    console.error("Wallet connect error:", err);
-    showToast("Connection failed — check WebAuth");
+    console.error("[XPR] Wallet connect error:", err);
+    if (err.message && err.message.includes("cancelled")) {
+      showToast("Connection cancelled by user");
+    } else {
+      showToast("Connection failed: " + (err.message || "Check WebAuth wallet"));
+    }
   }
 }
 
+// ── Fetch $BEATS balance with endpoint fallback ──
 async function fetchBeatsBalance() {
   if (!walletAccount) return;
-  try {
-    const ep = XPR_ENDPOINTS[0];
-    const res = await fetch(`${ep}/v1/chain/get_currency_balance`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: TOKEN_CONTRACT, account: walletAccount, symbol: "BEATS" })
-    });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      beatsBalance = data[0].split(" ")[0];
+
+  for (const ep of XPR_ENDPOINTS) {
+    try {
+      const res = await fetch(`${ep}/v1/chain/get_currency_balance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: TOKEN_CONTRACT,
+          account: walletAccount,
+          symbol: "BEATS"
+        })
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        beatsBalance = data[0].split(" ")[0];
+      } else {
+        beatsBalance = "0.00000000";
+      }
+      updateWalletUI();
+      return;
+    } catch (e) {
+      console.warn(`[XPR] Balance fetch failed on ${ep}:`, e.message);
+      continue;
     }
-  } catch (e) {
-    console.warn("Balance fetch failed:", e);
   }
-  updateWalletUI();
+  console.error("[XPR] All endpoints failed for balance fetch");
 }
 
+// ── Get account table rows (for additional token info) ──
+async function getTableRows(code, scope, table, limit = 10) {
+  for (const ep of XPR_ENDPOINTS) {
+    try {
+      const res = await fetch(`${ep}/v1/chain/get_table_rows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: true, code, scope, table, limit })
+      });
+      if (!res.ok) continue;
+      return await res.json();
+    } catch { continue; }
+  }
+  return null;
+}
+
+// ── Update wallet UI ──
 function updateWalletUI() {
   const btn = document.getElementById("walletBtn");
   const beatsBtn = document.getElementById("beatsBtn");
   if (walletConnected) {
-    btn.innerHTML = `<span class="wallet-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);margin-right:4px"></span>${walletAccount}`;
+    btn.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--grn);margin-right:5px;animation:pulse 2s infinite"></span>${walletAccount}`;
     btn.className = "hdr-btn xpr";
     beatsBtn.style.display = "flex";
     document.getElementById("beatsBal").textContent = parseFloat(beatsBalance).toFixed(2);
@@ -306,42 +378,98 @@ function updateWalletUI() {
   }
 }
 
+// ── Disconnect wallet ──
 async function disconnectWallet() {
-  if (protonSDK && session) {
-    try { await protonSDK.removeSession(NDAO_ACCOUNT, session.auth); } catch {}
+  if (protonLink && session) {
+    try {
+      await protonLink.removeSession(NDAO_ACCOUNT, session.auth);
+    } catch (e) {
+      console.warn("[XPR] Remove session error:", e);
+    }
   }
-  protonSDK = null; session = null;
-  walletConnected = false; walletAccount = ""; beatsBalance = "0.00000000";
-  updateWalletUI(); closePanel();
+  protonLink = null;
+  session = null;
+  walletConnected = false;
+  walletAccount = "";
+  walletPermission = "active";
+  beatsBalance = "0.00000000";
+  updateWalletUI();
+  closePanel();
   showToast("Wallet disconnected");
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BLOCKCHAIN TRANSACTIONS
+//  BLOCKCHAIN TRANSACTIONS — LIVE
 // ═══════════════════════════════════════════════════════════════
 const txLog = [];
 
 async function pushTransaction(actions) {
-  if (!walletConnected) { showToast("Connect wallet first"); return null; }
+  if (!walletConnected || !session) {
+    showToast("Connect wallet first");
+    return null;
+  }
 
-  if (session && session.transact) {
-    try {
-      const result = await session.transact({ actions }, { broadcast: true });
-      const txId = result.processed?.id || result.transaction_id || "tx_" + Date.now();
-      txLog.unshift({ id: txId, time: new Date().toISOString(), actions: actions.map(a => a.name) });
-      showToast(`TX confirmed: ${txId.slice(0, 8)}...`);
-      return txId;
-    } catch (err) {
-      console.error("TX error:", err);
-      showToast("Transaction failed: " + (err.message || "unknown"));
-      return null;
+  try {
+    const result = await session.transact(
+      { actions },
+      { broadcast: true }
+    );
+
+    // Extract transaction ID from result
+    const txId = result.processed?.id
+      || result.transaction_id
+      || (result.resolved && result.resolved.transaction && result.resolved.transaction.id)
+      || null;
+
+    if (!txId) {
+      console.warn("[XPR] TX submitted but no ID returned:", result);
+      showToast("TX submitted — confirming...");
+      txLog.unshift({
+        id: "pending_" + Date.now(),
+        time: new Date().toISOString(),
+        actions: actions.map(a => `${a.account}::${a.name}`),
+        status: "pending"
+      });
+      return "pending";
     }
-  } else {
-    // Demo mode
-    const txId = "demo_" + Date.now().toString(36);
-    txLog.unshift({ id: txId, time: new Date().toISOString(), actions: actions.map(a => a.name), demo: true });
-    showToast(`Demo TX: ${txId}`);
+
+    txLog.unshift({
+      id: txId,
+      time: new Date().toISOString(),
+      actions: actions.map(a => `${a.account}::${a.name}`),
+      status: "confirmed"
+    });
+
+    showToast(`✓ TX confirmed: ${txId.slice(0, 12)}...`);
+    console.log("[XPR] TX confirmed:", txId);
     return txId;
+
+  } catch (err) {
+    console.error("[XPR] Transaction error:", err);
+
+    let errorMsg = "Transaction failed";
+    if (err.message) {
+      if (err.message.includes("cancelled") || err.message.includes("declined")) {
+        errorMsg = "Transaction cancelled by user";
+      } else if (err.message.includes("balance")) {
+        errorMsg = "Insufficient BEATS balance";
+      } else if (err.message.includes("CPU") || err.message.includes("NET")) {
+        errorMsg = "Insufficient CPU/NET resources — stake more XPR";
+      } else {
+        errorMsg = err.message.slice(0, 100);
+      }
+    }
+
+    txLog.unshift({
+      id: "failed_" + Date.now(),
+      time: new Date().toISOString(),
+      actions: actions.map(a => `${a.account}::${a.name}`),
+      status: "failed",
+      error: errorMsg
+    });
+
+    showToast(errorMsg);
+    return null;
   }
 }
 
@@ -779,13 +907,16 @@ function renderPanel(){
     let html='';
     if(walletConnected){
       html+=`<div class="sec"><div class="sec-t">WALLET</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="width:8px;height:8px;border-radius:50%;background:var(--grn);display:inline-block"></span>
-          <span style="color:var(--txB);font-size:11px">${walletAccount}</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--grn);display:inline-block;animation:pulse 2s infinite"></span>
+          <span style="color:var(--txB);font-size:11px;font-weight:600">${walletAccount}</span>
+          <span style="font-size:8px;color:var(--grn);border:1px solid var(--grn);padding:1px 5px;border-radius:3px;letter-spacing:.1em">LIVE</span>
         </div>
-        <div style="font-size:10px;color:var(--txD);margin-bottom:6px">Contract: <span style="color:var(--xpr)">${TOKEN_CONTRACT}</span></div>
-        <div style="font-size:10px;color:var(--txD);margin-bottom:6px">Auth: <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span></div>
-        <div style="font-size:10px;color:var(--txD);margin-bottom:10px">Precision: <span style="color:var(--beats)">8</span></div>
+        <div style="font-size:9px;color:var(--txD);margin-bottom:4px">Permission: <span style="color:var(--xpr)">${walletPermission}</span></div>
+        <div style="font-size:9px;color:var(--txD);margin-bottom:4px">Contract: <span style="color:var(--xpr)">${TOKEN_CONTRACT}</span></div>
+        <div style="font-size:9px;color:var(--txD);margin-bottom:4px">Receiver: <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span></div>
+        <div style="font-size:9px;color:var(--txD);margin-bottom:4px">Chain: <span style="color:var(--cyn)">XPR Network Mainnet</span></div>
+        <div style="font-size:9px;color:var(--txD);margin-bottom:10px">Precision: <span style="color:var(--beats)">8</span></div>
         <div style="background:rgba(255,136,51,.06);border:1px solid rgba(255,136,51,.2);border-radius:6px;padding:10px;margin-bottom:10px">
           <div style="font-size:9px;color:var(--txM);letter-spacing:.1em;margin-bottom:4px">$BEATS BALANCE</div>
           <div style="font-size:18px;font-weight:700;color:var(--beats);font-family:'Orbitron',monospace">${parseFloat(beatsBalance).toFixed(8)}</div>
@@ -802,8 +933,9 @@ function renderPanel(){
           <button class="bsm beats-btn" onclick="mintComposition()">⛓ MINT COMPOSITION (1 BEATS)</button>
         </div>
         <div style="margin-top:8px;font-size:9px;color:var(--txD);line-height:1.7">
-          Minting saves your curve + audio config on-chain via<br>
-          <span style="color:var(--xpr)">${TOKEN_CONTRACT}::transfer</span> to <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span>
+          Mints your curve + audio config <strong style="color:var(--grn)">LIVE on-chain</strong> via<br>
+          <span style="color:var(--xpr)">${TOKEN_CONTRACT}::transfer</span> → <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span><br>
+          <span style="color:var(--txM)">Composition data stored in transaction memo</span>
         </div>
       </div>`;
 
@@ -818,7 +950,13 @@ function renderPanel(){
 
       if(txLog.length>0){
         html+=`<div class="sec"><div class="sec-t">TRANSACTION LOG</div>
-          <div class="tx-log">${txLog.map(tx=>`<div>${tx.demo?'[DEMO] ':''}${tx.actions.join(',')} — <a href="https://protonscan.io/transaction/${tx.id}" target="_blank">${tx.id.slice(0,16)}...</a><br><span style="color:var(--txG)">${tx.time}</span></div>`).join("")}</div>
+          <div class="tx-log">${txLog.map(tx=>{
+            const statusColor = tx.status==='confirmed'?'var(--grn)':tx.status==='failed'?'var(--red)':'var(--yel)';
+            const statusIcon = tx.status==='confirmed'?'✓':tx.status==='failed'?'✗':'⏳';
+            const txIdDisplay = tx.id.startsWith('failed_')||tx.id.startsWith('pending_')?tx.id:tx.id.slice(0,16)+'...';
+            const txLink = tx.id.startsWith('failed_')||tx.id.startsWith('pending_')?txIdDisplay:`<a href="https://protonscan.io/transaction/${tx.id}" target="_blank" rel="noopener">${txIdDisplay}</a>`;
+            return`<div style="margin-bottom:4px"><span style="color:${statusColor}">${statusIcon}</span> ${tx.actions.join(', ')} — ${txLink}${tx.error?'<br><span style="color:var(--red);font-size:7px">'+tx.error+'</span>':''}<br><span style="color:var(--txG)">${new Date(tx.time).toLocaleString()}</span></div>`;
+          }).join("")}</div>
         </div>`;
       }
     } else {
@@ -826,12 +964,14 @@ function renderPanel(){
         <div style="font-size:32px;margin-bottom:12px">⚡</div>
         <div style="font-size:12px;color:var(--txB);margin-bottom:8px;font-family:'Orbitron',monospace">CONNECT TO XPR NETWORK</div>
         <div style="font-size:10px;color:var(--txD);line-height:1.7;margin-bottom:16px">
-          Connect your WebAuth wallet to mint<br>compositions and use $BEATS tokens.
+          Connect your WebAuth wallet to mint<br>compositions on-chain with $BEATS tokens.
         </div>
-        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Contract: ${TOKEN_CONTRACT}</div>
-        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Token: BEATS (precision 8)</div>
-        <div style="font-size:9px;color:var(--txM);margin-bottom:16px">Auth: ${NDAO_ACCOUNT}</div>
-        <button class="bsm xpr-btn" style="font-size:12px;padding:10px 24px" onclick="connectWallet()">⚡ CONNECT WEBAUTH</button>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Chain: XPR Network (Mainnet)</div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Contract: <span style="color:var(--xpr)">${TOKEN_CONTRACT}</span></div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Token: <span style="color:var(--beats)">BEATS</span> (precision 8)</div>
+        <div style="font-size:9px;color:var(--txM);margin-bottom:4px">Auth: <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span></div>
+        <div style="font-size:9px;color:${window.ProtonWebSDK?'var(--grn)':'var(--red)'};margin-bottom:16px">SDK: ${window.ProtonWebSDK?'✓ Loaded':'✗ Not loaded — refresh page'}</div>
+        <button class="bsm xpr-btn" style="font-size:12px;padding:10px 24px" onclick="connectWallet()" ${window.ProtonWebSDK?'':'disabled'}>⚡ CONNECT WEBAUTH</button>
       </div>`;
     }
     body.innerHTML=html;
@@ -930,7 +1070,18 @@ addEventListener("resize",()=>draw());
 updateWalletUI();
 updateUI();
 startAnim();
+
+// Restore WebAuth session on page load
+(async () => {
+  await restoreSession();
+  // Auto-refresh balance every 30 seconds if connected
+  setInterval(async () => {
+    if (walletConnected) {
+      await fetchBeatsBalance();
+      if (openPanelId === "chain") renderPanel();
+    }
+  }, 30000);
+})();
 </script>
 </body>
 </html>
-
