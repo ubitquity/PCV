@@ -527,26 +527,17 @@ async function mintComposition() {
   if (!walletConnected) { connectWallet(); return; }
 
   const p = customExpr || getPreset();
-  const audioState = getAudioState();
-
-  // Build memo with composition data
-  const memo = JSON.stringify({
-    type: "ndao_beats_composition",
-    version: "1.0",
-    curve: { mode, name: p.name, x: p.xL || "", y: p.yL, z: p.zL || "", w: p.wL || "" },
-    audio: audioState,
-    timestamp: Date.now()
-  });
+  const memoData = buildMintMemo(p);
 
   const actions = [{
     account: TOKEN_CONTRACT,
     name: "transfer",
-    authorization: [{ actor: walletAccount, permission: "active" }],
+    authorization: [{ actor: walletAccount, permission: walletPermission }],
     data: {
       from: walletAccount,
       to: NDAO_ACCOUNT,
       quantity: "1.00000000 BEATS",
-      memo: memo.slice(0, 256)
+      memo: memoData
     }
   }];
 
@@ -558,19 +549,81 @@ async function mintComposition() {
   if (openPanelId === "chain") renderPanel();
 }
 
+// Build detailed memo with synth stats (max 256 chars for XPR Network)
+function buildMintMemo(p) {
+  // Compact format: key data in every byte
+  const oscStr = oscConfigs.map((o,i) =>
+    `${o.wave.slice(0,3)}:${o.freq}Hz:d${o.detune}:g${o.gain.toFixed(1)}`
+  ).join("|");
+
+  const memo = [
+    `nDAO_BEATS_v1`,
+    `curve:${(p.name||"custom").slice(0,12)}`,
+    `mode:${mode}`,
+    `osc:[${oscStr}]`,
+    `flt:${audioParams.filterType.slice(0,3)}@${audioParams.filterFreq}Hz/Q${audioParams.filterQ.toFixed(1)}`,
+    `lfo:${audioParams.lfoRate.toFixed(1)}Hz*${audioParams.lfoDepth}`,
+    `vol:${Math.round(audioParams.masterVol*100)}%`,
+    `t:${Date.now()}`
+  ].join(";");
+
+  // XPR Network memo max 256 chars
+  return memo.slice(0, 256);
+}
+
+// Human-readable memo preview for UI display
+function getMemoPreview() {
+  const p = customExpr || getPreset();
+  return buildMintMemo(p);
+}
+
+// Detailed stats object for panel display
+function getSynthStats() {
+  const p = customExpr || getPreset();
+  return {
+    curveName: p.name || "Custom",
+    curveMode: mode,
+    equations: mode === "parametric" || mode === "audio" ? {
+      x: p.xL || "", y: p.yL || "", z: p.zL || "", w: p.wL || ""
+    } : { f: p.yL || "" },
+    oscillators: oscConfigs.map((o, i) => ({
+      id: i + 1,
+      waveform: o.wave,
+      frequency: o.freq + " Hz",
+      detune: o.detune + " cents",
+      gain: (o.gain * 100).toFixed(0) + "%"
+    })),
+    filter: {
+      type: audioParams.filterType,
+      cutoff: audioParams.filterFreq + " Hz",
+      resonance: audioParams.filterQ.toFixed(1)
+    },
+    lfo: {
+      rate: audioParams.lfoRate.toFixed(2) + " Hz",
+      depth: audioParams.lfoDepth
+    },
+    master: {
+      volume: Math.round(audioParams.masterVol * 100) + "%"
+    }
+  };
+}
+
 async function tipBeats(amount) {
   if (!walletConnected) { connectWallet(); return; }
 
+  const p = customExpr || getPreset();
   const qty = parseFloat(amount).toFixed(8) + " BEATS";
+  const tipMemo = `nDAO_BEATS_tip;from:${walletAccount};curve:${(p.name||"custom").slice(0,12)};amt:${amount};t:${Date.now()}`;
+
   const actions = [{
     account: TOKEN_CONTRACT,
     name: "transfer",
-    authorization: [{ actor: walletAccount, permission: "active" }],
+    authorization: [{ actor: walletAccount, permission: walletPermission }],
     data: {
       from: walletAccount,
       to: NDAO_ACCOUNT,
       quantity: qty,
-      memo: "nDAO BEATS tip from synthesizer"
+      memo: tipMemo.slice(0, 256)
     }
   }];
 
@@ -978,14 +1031,45 @@ function renderPanel(){
         </div>
       </div>`;
 
-      html+=`<div class="sec"><div class="sec-t">ACTIONS</div>
-        <div class="brow">
-          <button class="bsm beats-btn" onclick="mintComposition()">⛓ MINT COMPOSITION (1 BEATS)</button>
+      // Synth stats for display
+      const stats = getSynthStats();
+      html+=`<div class="sec"><div class="sec-t">CURRENT SYNTH STATE</div>
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:10px;font-size:8.5px;line-height:1.9;margin-bottom:6px">
+          <div style="color:var(--txB);font-size:9px;margin-bottom:4px;font-weight:600">CURVE: <span style="color:var(--cyn)">${stats.curveName}</span> <span style="color:var(--txG)">(${stats.curveMode})</span></div>
+          ${stats.curveMode!=='fourier'?`
+          <div><span style="color:var(--red)">x</span> = ${stats.equations.x}</div>
+          <div><span style="color:var(--grn)">y</span> = ${stats.equations.y}</div>
+          <div><span style="color:var(--blu)">z</span> = ${stats.equations.z}</div>
+          <div><span style="color:var(--yel)">w</span> = ${stats.equations.w}</div>
+          `:`<div><span style="color:var(--grn)">f(θ)</span> = ${stats.equations.f}</div>`}
         </div>
-        <div style="margin-top:8px;font-size:9px;color:var(--txD);line-height:1.7">
-          Mints your curve + audio config <strong style="color:var(--grn)">LIVE on-chain</strong> via<br>
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:10px;font-size:8.5px;line-height:1.9;margin-bottom:6px">
+          <div style="color:var(--txB);font-size:9px;margin-bottom:4px;font-weight:600">OSCILLATORS</div>
+          ${stats.oscillators.map(o=>`<div style="color:var(--txD)"><span style="color:var(--beats)">#${o.id}</span> ${o.waveform} · <span style="color:var(--cyn)">${o.frequency}</span> · detune ${o.detune} · gain ${o.gain}</div>`).join("")}
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:10px;font-size:8.5px;line-height:1.9;margin-bottom:6px">
+          <div style="color:var(--txB);font-size:9px;margin-bottom:4px;font-weight:600">FILTER + LFO</div>
+          <div style="color:var(--txD)">Type: <span style="color:var(--pur)">${stats.filter.type}</span> · Cutoff: <span style="color:var(--cyn)">${stats.filter.cutoff}</span> · Q: ${stats.filter.resonance}</div>
+          <div style="color:var(--txD)">LFO: <span style="color:var(--cyn)">${stats.lfo.rate}</span> · Depth: ${stats.lfo.depth}</div>
+          <div style="color:var(--txD)">Master: <span style="color:var(--grn)">${stats.master.volume}</span></div>
+        </div>
+      </div>`;
+
+      // Memo preview
+      const memoPreview = getMemoPreview();
+      html+=`<div class="sec"><div class="sec-t">ON-CHAIN MEMO PREVIEW</div>
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:10px;font-size:7.5px;color:var(--cyn);line-height:1.6;word-break:break-all;font-family:inherit;margin-bottom:4px">${memoPreview}</div>
+        <div style="font-size:7px;color:var(--txG)">${memoPreview.length}/256 chars · This data is written to the blockchain memo field</div>
+      </div>`;
+
+      html+=`<div class="sec"><div class="sec-t">MINT COMPOSITION</div>
+        <div class="brow" style="margin-bottom:8px">
+          <button class="bsm beats-btn" onclick="mintComposition()" style="font-size:11px;padding:8px 16px">⛓ MINT ON-CHAIN (1 BEATS)</button>
+        </div>
+        <div style="font-size:9px;color:var(--txD);line-height:1.7">
+          Mints your curve + synth config <strong style="color:var(--grn)">LIVE on-chain</strong> via<br>
           <span style="color:var(--xpr)">${TOKEN_CONTRACT}::transfer</span> → <span style="color:var(--xpr)">${NDAO_ACCOUNT}</span><br>
-          <span style="color:var(--txM)">Composition data stored in transaction memo</span>
+          <span style="color:var(--txM)">Frequencies, waveforms, filter &amp; LFO data stored in memo</span>
         </div>
       </div>`;
 
